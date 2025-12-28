@@ -6,8 +6,8 @@
   "types": "./index.ts",
   "scripts": {
     "generate": "prisma generate",
-    "push": "prisma db push",
-    "test:push": "NODE_ENV=test prisma db push",
+    "push": "prisma db push && prisma generate",
+    "test:push": "NODE_ENV=test prisma db push && NODE_ENV=test prisma generate",
     "test": "NODE_ENV=test vitest run"
   },
   "dependencies": {

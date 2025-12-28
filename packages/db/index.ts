@@ -1,3 +1,4 @@
+// packages/db/index.ts
 import { PrismaClient } from "@prisma/client";
 import { prismaConfig } from "./prisma.config";
 
@@ -13,7 +14,6 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 
 /**
  * [CRITICAL] Isolated Client для Multi-tenancy.
- * Автоматически фильтрует Unit, Enterprise и User по businessId.
  */
 export const createIsolatedClient = (businessId: string) => {
   return prisma.$extends({
@@ -23,7 +23,7 @@ export const createIsolatedClient = (businessId: string) => {
           const tenantModels = ["Unit", "Enterprise", "User"];
           if (tenantModels.includes(model)) {
             if (operation === "create") {
-              // @ts-expect-error - Инъекция бизнес-ключа
+              // @ts-expect-error - Prisma extension mapping
               args.data.businessId = businessId;
             } else if (
               [
@@ -36,7 +36,7 @@ export const createIsolatedClient = (businessId: string) => {
                 "deleteMany",
               ].includes(operation)
             ) {
-              // @ts-expect-error - Фильтрация по бизнес-ключу
+              // @ts-expect-error - Filter by businessId
               args.where = { ...args.where, businessId };
             }
           }
