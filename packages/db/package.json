@@ -5,17 +5,19 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
-    "test": "NODE_ENV=test vitest run",
-    "test:push": "NODE_ENV=test prisma db push --env-file ../../.env",
     "generate": "prisma generate",
-    "push": "prisma db push"
+    "push": "prisma db push",
+    "test:push": "NODE_ENV=test prisma db push",
+    "test": "NODE_ENV=test vitest run"
   },
   "dependencies": {
-    "@prisma/client": "^7.2.0"
+    "@prisma/client": "^7.2.0",
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
     "prisma": "^7.2.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }
