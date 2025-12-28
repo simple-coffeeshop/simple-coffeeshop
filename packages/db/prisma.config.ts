@@ -1,23 +1,20 @@
 // packages/db/prisma.config.ts
-import type { Prisma } from "@prisma/client";
+import { defineConfig } from "prisma/config";
 
 /**
- * [EVAS_PROTIP]: Для тестов мы отключаем логирование запросов 'query',
- * чтобы не забивать консоль при массовых операциях очистки/сидинга.
+ * [EVAS_PROTIP]: Prisma CLI автоматически загружает .env перед запуском этого файла.
+ * Мы используем DATABASE_URL для разработки и можем переключать его для тестов.
  */
-const getLogConfig = (): Prisma.LogLevel[] => {
-  if (process.env.NODE_ENV === "test") {
-    return ["error", "warn"];
-  }
-  if (process.env.NODE_ENV === "development") {
-    return ["query", "info", "warn", "error"];
-  }
-  return ["error"];
-};
+export default defineConfig({
+  schema: "prisma/schema",
+  datasource: {
+    // Используем переменную из нашего .env файла
+    url: process.env.DATABASE_URL,
+  },
+});
 
-export const prismaConfig: Prisma.PrismaClientOptions = {
-  log: getLogConfig(),
+// Конфиг для клиента (Runtime), который мы создали ранее
+export const prismaClientConfig = {
+  log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"],
   errorFormat: "pretty",
-};
-
-export default prismaConfig;
+} as const;

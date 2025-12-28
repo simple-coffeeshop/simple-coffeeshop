@@ -8,13 +8,12 @@
     "generate": "prisma generate",
     "push": "prisma db push"
   },
-  "devDependencies": {
-    "@prisma/client": "^7.2.0",
-    "@types/node": "^25.0.3",
-    "typescript": "^5.9.3"
-  },
   "dependencies": {
-    "superjson": "^2.2.6",
-    "zod": "^4.2.1"
+    "@prisma/client": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "prisma": "^7.2.0",
+    "typescript": "^5.9.3"
   }
 }
