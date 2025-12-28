@@ -14,8 +14,10 @@
     "build": "pnpm -r build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "db:generate": "pnpm --filter @coffee/db generate",
-    "db:push": "pnpm --filter @coffee/db push"
+    "db:generate": "pnpm --filter @simple-coffeeshop/db generate",
+    "db:push": "pnpm --filter @simple-coffeeshop/db push",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

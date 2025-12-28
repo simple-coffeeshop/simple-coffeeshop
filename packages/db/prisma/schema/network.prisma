@@ -5,7 +5,6 @@ model Business {
   name        String
   is_archived Boolean @default(false)
 
-  // Ownership Handshake logic
   ownerId         String
   newOwnerId      String?
   handshakeStatus HandshakeStatus @default(IDLE)
@@ -36,7 +35,6 @@ model Unit {
   address  String?
   timezone String  @default("UTC")
 
-  // Capabilities Logic
   capabilities String[] // 📦, 🔪, 👥, 🚚, 💰, 🎓
   tags         String[] // #Кофейня, #Собственная
   allowed_ip   String? // Безопасность
@@ -55,7 +53,7 @@ model Member {
   userId     String
   businessId String
   business   Business @relation(fields: [businessId], references: [id])
-  role       Role     @default(STAFF) // OWNER, MANAGER, STAFF
+  role       Role     @default(STAFF)
 
   @@unique([userId, businessId])
   @@index([businessId])
