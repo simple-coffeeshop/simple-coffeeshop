@@ -1,0 +1,73 @@
+// Модуль 00: Core Network & Identity
+
+model Business {
+  id          String  @id @default(cuid())
+  name        String
+  is_archived Boolean @default(false)
+
+  // Ownership Handshake logic
+  ownerId         String
+  newOwnerId      String?
+  handshakeStatus HandshakeStatus @default(IDLE)
+  handshakeAt     DateTime? // Кулдаун 168 часов
+
+  enterprises Enterprise[]
+  members     Member[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([ownerId])
+}
+
+model Enterprise {
+  id          String   @id @default(cuid())
+  name        String
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  units       Unit[]
+  is_archived Boolean  @default(false)
+
+  @@index([businessId])
+}
+
+model Unit {
+  id       String  @id @default(cuid())
+  name     String
+  address  String?
+  timezone String  @default("UTC")
+
+  // Capabilities Logic
+  capabilities String[] // 📦, 🔪, 👥, 🚚, 💰, 🎓
+  tags         String[] // #Кофейня, #Собственная
+  allowed_ip   String? // Безопасность
+
+  enterpriseId String
+  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id])
+  businessId   String
+  is_archived  Boolean    @default(false)
+
+  @@index([businessId])
+  @@index([enterpriseId])
+}
+
+model Member {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  role       Role     @default(STAFF) // OWNER, MANAGER, STAFF
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+}
+
+enum HandshakeStatus {
+  IDLE
+  PENDING
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+}

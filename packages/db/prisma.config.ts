@@ -2,15 +2,22 @@
 import type { Prisma } from "@prisma/client";
 
 /**
- * Глобальный конфиг Prisma для всего проекта.
- * Используется для стандартизации логирования и обработки ошибок.
+ * [EVAS_PROTIP]: Для тестов мы отключаем логирование запросов 'query',
+ * чтобы не забивать консоль при массовых операциях очистки/сидинга.
  */
+const getLogConfig = (): Prisma.LogLevel[] => {
+  if (process.env.NODE_ENV === "test") {
+    return ["error", "warn"];
+  }
+  if (process.env.NODE_ENV === "development") {
+    return ["query", "info", "warn", "error"];
+  }
+  return ["error"];
+};
+
 export const prismaConfig: Prisma.PrismaClientOptions = {
-	log:
-		process.env.NODE_ENV === "development"
-			? ["query", "info", "warn", "error"]
-			: ["error"],
-	errorFormat: "pretty",
+  log: getLogConfig(),
+  errorFormat: "pretty",
 };
 
 export default prismaConfig;
