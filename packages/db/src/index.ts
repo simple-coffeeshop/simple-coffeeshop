@@ -1,6 +1,6 @@
 // packages/db/src/index.ts
 import { PrismaClient } from "@prisma/client";
-import { prismaConfig } from "../prisma.config";
+import { prismaConfig } from "../prisma.config"; // Путь верный, если файл в src/index.ts
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -11,32 +11,34 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaConfig);
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 /**
- * [EVAS_PROTIP]: Мы расширяем клиент Prisma, чтобы он автоматически
- * добавлял фильтр businessId ко всем запросам.
- * Это предотвращает утечку данных между арендаторами.
+ * Изолированный клиент для Strict Multi-Tenancy.
  */
 export const createIsolatedClient = (businessId: string) => {
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Список моделей, которые являются глобальными (не требуют businessId)
+          // Модели без изоляции
           const globalModels = ["Business"];
-
           if (globalModels.includes(model)) {
             return query(args);
           }
 
-          // Для всех остальных моделей внедряем фильтр businessId
+          // Приведение к any необходимо, так как args — это Union всех типов аргументов Prisma.
+          // Это стандартный паттерн для динамических расширений.
+          const a = args as any;
+
+          // Изоляция чтений и массовых обновлений
           if (["findMany", "findFirst", "count", "updateMany", "deleteMany"].includes(operation)) {
-            args.where = { ...args.where, businessId };
+            a.where = { ...a.where, businessId };
           }
 
+          // Изоляция создания
           if (["create", "createMany"].includes(operation)) {
-            if (Array.isArray(args.data)) {
-              args.data = args.data.map((item: any) => ({ ...item, businessId }));
+            if (Array.isArray(a.data)) {
+              a.data = a.data.map((item: any) => ({ ...item, businessId }));
             } else {
-              args.data = { ...args.data, businessId };
+              a.data = { ...a.data, businessId };
             }
           }
 

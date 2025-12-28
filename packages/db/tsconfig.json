@@ -1,8 +1,10 @@
+// packages/db/tsconfig.json
 {
   "extends": "../config/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "prisma.config.ts", "prisma/schema/**/*.prisma"]
 }
