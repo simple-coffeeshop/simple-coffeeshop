@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Coffee-ERP | Scheduler</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #f0533a;
+            --bg-body: #F9FAFB;
+            --bg-surface: #ffffff;
+            --text-main: #111827;
+            --text-sec: #6B7280;
+            --border: #E5E7EB;
+            
+            --shift-barista: #FFF7ED; /* Orange tint */
+            --shift-barista-border: #F97316;
+            
+            --shift-manager: #ECFDF5; /* Green tint */
+            --shift-manager-border: #10B981;
+            
+            --radius: 12px;
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            --trans: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-body); color: var(--text-main); height: 100dvh; display: flex; overflow: hidden; }
+
+        /* HEADER & CONTROLS */
+        .header {
+            height: 70px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center;
+            background: #fff; border-bottom: 1px solid var(--border); z-index: 20;
+        }
+
+        .date-nav { display: flex; align-items: center; gap: 16px; background: #F3F4F6; padding: 4px; border-radius: 12px; }
+        .nav-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; color: var(--text-sec); transition: 0.2s; }
+        .nav-btn:hover { background: #fff; color: var(--text-main); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .current-week { font-weight: 600; font-size: 14px; padding: 0 8px; }
+
+        /* KPI BAR (The Smart Part) */
+        .kpi-bar {
+            display: flex; gap: 24px; align-items: center;
+            padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--border);
+        }
+        .kpi-item { display: flex; flex-direction: column; }
+        .kpi-label { font-size: 10px; font-weight: 700; color: var(--text-sec); text-transform: uppercase; }
+        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+        
+        /* Labor Cost Progress */
+        .lc-widget { display: flex; align-items: center; gap: 12px; background: #F9FAFB; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .lc-track { width: 100px; height: 6px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }
+        .lc-fill { height: 100%; background: #10B981; border-radius: 4px; width: 22%; } /* 22% is good */
+        .lc-text { font-size: 12px; font-weight: 600; }
+
+        /* SCHEDULER GRID LAYOUT */
+        .scheduler-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .grid-container {
+            flex: 1; overflow: auto; display: grid;
+            grid-template-columns: 220px repeat(7, minmax(160px, 1fr)); /* User Col + 7 Days */
+            grid-template-rows: 50px auto; /* Header + Content */
+        }
+
+        /* Sticky Headers */
+        .day-header {
+            position: sticky; top: 0; background: #F9FAFB; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
+            font-size: 13px; font-weight: 600; color: var(--text-sec);
+        }
+        .day-header.today { background: #EEF2FF; color: var(--primary); border-bottom: 2px solid var(--primary); }
+        
+        .corner-header {
+            position: sticky; top: 0; left: 0; z-index: 15; background: #fff;
+            border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+            display: flex; align-items: center; padding-left: 16px; font-size: 12px; font-weight: 700; color: var(--text-sec);
+        }
+
+        /* User Column (Sticky Left) */
+        .user-col {
+            position: sticky; left: 0; background: #fff; z-index: 5;
+            border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+        }
+        .u-avatar { width: 32px; height: 32px; border-radius: 50%; background: #eee; object-fit: cover; }
+        .u-info { display: flex; flex-direction: column; }
+        .u-name { font-size: 13px; font-weight: 600; }
+        .u-role { font-size: 11px; color: var(--text-sec); }
+        .u-hours { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--text-sec); background: #F3F4F6; padding: 2px 6px; border-radius: 4px; }
+
+        /* Grid Cells */
+        .grid-cell {
+            background: #fff; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+            padding: 8px; min-height: 80px; position: relative; transition: 0.2s;
+        }
+        .grid-cell:hover { background: #FAFAFA; }
+        
+        /* Add Button on Hover */
+        .add-shift-btn {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            opacity: 0; cursor: pointer; font-size: 24px; color: var(--text-sec);
+        }
+        .grid-cell:hover .add-shift-btn { opacity: 0.5; }
+        .add-shift-btn:hover { opacity: 1; background: rgba(0,0,0,0.02); }
+
+        /* SHIFT CARD */
+        .shift {
+            background: #fff; border-radius: 8px; padding: 8px 10px;
+            margin-bottom: 6px; cursor: grab; position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .shift:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 2; }
+        .shift:active { cursor: grabbing; }
+
+        /* Types */
+        .shift.barista { background: var(--shift-barista); border-left-color: var(--shift-barista-border); }
+        .shift.manager { background: var(--shift-manager); border-left-color: var(--shift-manager-border); }
+        
+        /* Draft State (Stripes) */
+        .shift.draft {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px);
+            opacity: 0.9; border-style: dashed; border-width: 1px; border-left-style: solid; border-left-width: 3px;
+        }
+
+        /* Ghost Slot (Unassigned) */
+        .shift.ghost {
+            background: transparent; border: 1px dashed var(--text-sec); border-left: 3px solid var(--text-sec);
+            opacity: 0.6;
+        }
+
+        .s-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--text-main); }
+        .s-dur { font-size: 10px; color: var(--text-sec); margin-top: 2px; }
+        .s-role { position: absolute; top: 8px; right: 8px; font-size: 10px; opacity: 0.7; }
+
+        /* FOOTER ACTIONS */
+        .footer-bar {
+            padding: 16px 24px; background: #fff; border-top: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 12px; z-index: 30;
+        }
+        
+        .btn-pub {
+            background: var(--text-main); color: #fff; padding: 12px 24px;
+            border-radius: 10px; font-weight: 600; border: none; cursor: pointer;
+            display: flex; gap: 8px; align-items: center;
+        }
+        .btn-pub:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    </style>
+</head>
+<body>
+
+    <div class="scheduler-wrap">
+        <div class="header">
+            <h2 style="font-size: 18px; font-weight: 700;">График смен</h2>
+            
+            <div class="date-nav">
+                <div class="nav-btn">←</div>
+                <div class="current-week">16 — 22 Декабря</div>
+                <div class="nav-btn">→</div>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="nav-btn" title="Скопировать прошлую неделю">📋</button>
+                <button class="nav-btn" title="Настройки">⚙️</button>
+            </div>
+        </div>
+
+        <div class="kpi-bar">
+            <div class="kpi-item">
+                <span class="kpi-label">Всего часов</span>
+                <span class="kpi-val">248ч</span>
+            </div>
+            <div class="kpi-item">
+                <span class="kpi-label">Прогноз ФОТ</span>
+                <span class="kpi-val">68,400 ₽</span>
+            </div>
+            
+            <div class="lc-widget">
+                <div style="display: flex; flex-direction: column;">
+                    <span class="kpi-label">Labor Cost</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="lc-text" style="color: #10B981;">22%</span>
+                        <div class="lc-track">
+                            <div class="lc-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            
+            <div class="corner-header">Сотрудник</div>
+
+            <div class="day-header">ПН <span style="font-size:11px; font-weight:400;">16</span></div>
+            <div class="day-header">ВТ <span style="font-size:11px; font-weight:400;">17</span></div>
+            <div class="day-header">СР <span style="font-size:11px; font-weight:400;">18</span></div>
+            <div class="day-header">ЧТ <span style="font-size:11px; font-weight:400;">19</span></div>
+            <div class="day-header today">ПТ <span>20</span></div>
+            <div class="day-header">СБ <span style="font-size:11px; font-weight:400;">21</span></div>
+            <div class="day-header">ВС <span style="font-size:11px; font-weight:400;">22</span></div>
+
+            <div class="user-col">
+                <img src="https://ui-avatars.com/api/?name=Alex&background=random" class="u-avatar">
+                <div class="u-info">
+                    <span class="u-name">Alex K.</span>
+                    <span class="u-role">Manager</span>
+                </div>
+                <div class="u-hours">40ч</div>
+            </div>
+            
+            <div class="grid-cell">
+                <div class="shift manager">
+                    <div class="s-time">09:00 - 18:00</div>
+                    <div class="s-dur">9ч • Админ</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div> <div class="grid-cell">
+                 <div class="shift manager">
+                    <div class="s-time">09:00 - 18:00</div>
+                    <div class="s-dur">9ч • Админ</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+            <div class="grid-cell">
+                <div class="shift manager draft">
+                    <div class="s-time">10:00 - 16:00</div>
+                    <div class="s-dur">6ч • Контроль</div>
+                    <div class="s-role" title="Draft">✏️</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+
+
+            <div class="user-col">
+                <img src="https://ui-avatars.com/api/?name=Bob&background=random" class="u-avatar">
+                <div class="u-info">
+                    <span class="u-name">Bob D.</span>
+                    <span class="u-role">Barista</span>
+                </div>
+                <div class="u-hours">52ч</div>
+            </div>
+            
+            <div class="grid-cell">
+                <div class="shift barista">
+                    <div class="s-time">07:00 - 19:00</div>
+                    <div class="s-dur">12ч • Смена</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell">
+                <div class="shift barista">
+                    <div class="s-time">07:00 - 19:00</div>
+                    <div class="s-dur">12ч • Смена</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+            <div class="grid-cell">
+                 <div class="shift barista">
+                    <div class="s-time">07:00 - 19:00</div>
+                    <div class="s-dur">12ч • Смена</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell">
+                <div class="shift barista" style="border: 2px solid #EF4444;">
+                    <div class="s-time">07:00 - 21:00</div>
+                    <div class="s-dur">14ч • ⚠️ Перераб.</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+            <div class="grid-cell"><div class="add-shift-btn">+</div></div>
+
+            <div class="user-col" style="background: #F9FAFB;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; border: 1px dashed var(--text-sec); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-sec);">?</div>
+                <div class="u-info">
+                    <span class="u-name" style="color: var(--text-sec);">Вакансия</span>
+                    <span class="u-role">Нужен бариста</span>
+                </div>
+            </div>
+
+            <div class="grid-cell" style="background: #F9FAFB;"></div>
+            <div class="grid-cell" style="background: #F9FAFB;"></div>
+            <div class="grid-cell" style="background: #F9FAFB;">
+                 <div class="shift ghost">
+                    <div class="s-time">16:00 - 22:00</div>
+                    <div class="s-dur">Вечерняя запара</div>
+                </div>
+                <div class="add-shift-btn">+</div>
+            </div>
+            <div class="grid-cell" style="background: #F9FAFB;"></div>
+            <div class="grid-cell" style="background: #F9FAFB;">
+                <div class="shift ghost">
+                    <div class="s-time">17:00 - 23:00</div>
+                    <div class="s-dur">Закрытие</div>
+                </div>
+            </div>
+            <div class="grid-cell" style="background: #F9FAFB;"></div>
+            <div class="grid-cell" style="background: #F9FAFB;"></div>
+
+        </div>
+
+        <div class="footer-bar">
+            <div style="margin-right: auto; font-size: 13px; color: var(--text-sec); display: flex; align-items: center; gap: 10px;">
+                <span>Есть несохраненные изменения (3)</span>
+                <span style="font-size: 10px; padding: 2px 6px; background: #E5E7EB; border-radius: 4px;">Черновик</span>
+            </div>
+            <button class="nav-btn" style="border: 1px solid var(--border);">Сбросить</button>
+            <button class="btn-pub">
+                Опубликовать график
+                <span>→</span>
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>

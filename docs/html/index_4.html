@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Coffee-ERP | My Units</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #f0533a;
+            --primary-dim: rgba(240, 83, 58, 0.08);
+            --bg-body: #F9FAFB;
+            --bg-surface: #ffffff;
+            --line: #E5E7EB;
+            --text-main: #1F2937;
+            --text-sec: #6B7280;
+            --success: #10B981;
+            --danger: #EF4444;
+            
+            --sidebar-w: 260px;
+            --header-h: 70px;
+            --radius-xl: 20px;
+            --radius-md: 12px;
+            
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            --shadow-float: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+            --trans: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg-body); color: var(--text-main);
+            height: 100dvh; display: flex; overflow: hidden;
+        }
+
+        /* --- SIDEBAR (Reuse from Dashboard) --- */
+        .sidebar {
+            width: var(--sidebar-w); background: var(--bg-surface);
+            border-right: 1px solid var(--line); display: flex; flex-direction: column;
+            padding: 24px 16px; z-index: 50; flex-shrink: 0;
+        }
+
+        .brand {
+            display: flex; align-items: center; gap: 10px; padding: 0 12px 24px 12px;
+            border-bottom: 1px solid var(--line); margin-bottom: 20px;
+        }
+        .brand-icon {
+            width: 32px; height: 32px; background: var(--primary); border-radius: 8px;
+            mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><path d="M18 8H19C20.1046 8 21 8.89543 21 10V13C21 14.1046 20.1046 15 19 15H18V8ZM16 8H4V18C4 19.1046 4.89543 20 6 20H14C15.1046 20 16 19.1046 16 18V8Z"/></svg>') no-repeat center;
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><path d="M18 8H19C20.1046 8 21 8.89543 21 10V13C21 14.1046 20.1046 15 19 15H18V8ZM16 8H4V18C4 19.1046 4.89543 20 6 20H14C15.1046 20 16 19.1046 16 18V8Z"/></svg>') no-repeat center;
+        }
+        .brand-text { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 8px; color: var(--text-sec);
+            text-decoration: none; font-size: 14px; font-weight: 500;
+            transition: var(--trans); margin-bottom: 4px;
+        }
+        .nav-item:hover { background: var(--bg-body); color: var(--text-main); }
+        .nav-item.active { background: var(--primary-dim); color: var(--primary); }
+        .nav-icon { width: 18px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+        .header {
+            height: var(--header-h); padding: 0 32px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line); z-index: 40;
+        }
+
+        /* Кнопка добавления (Primary) */
+        .btn-primary {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--text-main); color: #fff;
+            padding: 10px 20px; border-radius: 10px; border: none;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: var(--trans);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn-primary:active { transform: scale(0.96); }
+
+        .content { flex: 1; overflow-y: auto; padding: 32px; }
+
+        .page-head { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .ph-title h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+        .ph-subtitle { color: var(--text-sec); font-size: 15px; margin-top: 4px; }
+
+        /* UNITS GRID */
+        .units-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        /* UNIT CARD */
+        .unit-card {
+            background: #fff; border-radius: var(--radius-xl);
+            border: 1px solid var(--line); padding: 24px;
+            display: flex; flex-direction: column; gap: 20px;
+            transition: var(--trans); cursor: pointer; position: relative; overflow: hidden;
+        }
+        .unit-card:hover { border-color: #d1d5db; box-shadow: var(--shadow-float); transform: translateY(-4px); }
+
+        .uc-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        
+        .uc-info { display: flex; gap: 16px; align-items: center; }
+        .uc-icon {
+            width: 48px; height: 48px; background: #F3F4F6; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+        }
+        
+        .uc-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .uc-addr { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+
+        /* Live Status Badge */
+        .status-badge {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+        }
+        .status-badge.open { background: #ECFDF5; color: var(--success); }
+        .status-badge.closed { background: #F3F4F6; color: var(--text-sec); }
+        
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        .status-badge.open .pulse-dot { animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Metrics Strip */
+        .uc-metrics {
+            display: grid; grid-template-columns: 1fr 1fr;
+            background: #F9FAFB; border-radius: 12px; padding: 12px;
+        }
+        .metric { display: flex; flex-direction: column; gap: 2px; }
+        .metric:last-child { align-items: flex-end; text-align: right; }
+        
+        .m-label { font-size: 11px; font-weight: 600; color: var(--text-sec); text-transform: uppercase; }
+        .m-val { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+        /* Actions Footer */
+        .uc-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 16px; border-top: 1px solid var(--bg-body);
+        }
+        .staff-stack { display: flex; padding-left: 10px; }
+        .st-img {
+            width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff;
+            margin-left: -10px; background: #ddd; object-fit: cover;
+        }
+        
+        .arrow-btn {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--line); color: var(--text-sec);
+            transition: var(--trans);
+        }
+        .unit-card:hover .arrow-btn { background: var(--text-main); color: #fff; border-color: var(--text-main); }
+
+        /* ADD UNIT MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            z-index: 100; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.open { display: flex; opacity: 1; }
+
+        .modal {
+            background: #fff; width: 100%; max-width: 480px;
+            border-radius: 24px; padding: 32px;
+            box-shadow: var(--shadow-float);
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.open .modal { transform: scale(1); }
+
+        .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+        .modal-form { display: grid; gap: 16px; }
+        
+        .inp-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--text-sec); text-transform: uppercase; }
+        .inp-field {
+            width: 100%; height: 48px; border: 2px solid var(--line);
+            border-radius: 12px; padding: 0 16px; font-size: 15px; outline: none;
+            transition: 0.2s;
+        }
+        .inp-field:focus { border-color: var(--primary); background: #fff; }
+
+        .modal-actions {
+            display: flex; gap: 12px; margin-top: 12px;
+        }
+        .btn-cancel {
+            flex: 1; height: 48px; border: none; background: #F3F4F6;
+            color: var(--text-sec); font-weight: 600; border-radius: 12px; cursor: pointer;
+        }
+        .btn-save {
+            flex: 2; height: 48px; border: none; background: var(--primary);
+            color: #fff; font-weight: 600; border-radius: 12px; cursor: pointer;
+        }
+
+        /* MOBILE NAV (Reuse) */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(31, 41, 55, 0.95); backdrop-filter: blur(16px);
+            padding: 0 8px; border-radius: 24px; height: 64px;
+            align-items: center; gap: 4px; z-index: 90;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .mn-item {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; color: rgba(255,255,255,0.6); transition: 0.2s; font-size: 20px; text-decoration: none;
+        }
+        .mn-item.active { background: rgba(255,255,255,0.1); color: #fff; }
+
+        @media (max-width: 1024px) {
+            .sidebar { display: none; }
+            .header { padding: 0 20px; }
+            .content { padding: 20px 16px 100px 16px; }
+            .mobile-nav { display: flex; width: calc(100% - 32px); max-width: 400px; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon"></div>
+            <div class="brand-text">Coffee ERP</div>
+        </div>
+        <nav>
+            <a href="#" class="nav-item"><span class="nav-icon">🏠</span> Дашборд</a>
+            <a href="#" class="nav-item active"><span class="nav-icon">🏢</span> Точки (Юниты)</a>
+            <a href="#" class="nav-item"><span class="nav-icon">📦</span> Склад</a>
+            <a href="#" class="nav-item"><span class="nav-icon">👥</span> Сотрудники</a>
+        </nav>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <h2 style="font-size: 18px; font-weight: 700;">Мои Кофейни</h2>
+            <button class="btn-primary" onclick="openModal()">
+                <span>+</span> Новый юнит
+            </button>
+        </header>
+
+        <div class="content">
+            <div class="page-head">
+                <div class="ph-title">
+                    <h1>Управление сетью</h1>
+                    <div class="ph-subtitle">3 активные точки • 1 в ремонте</div>
+                </div>
+            </div>
+
+            <div class="units-grid">
+                
+                <div class="unit-card" onclick="alert('Переход к дашборду точки...')">
+                    <div class="uc-header">
+                        <div class="uc-info">
+                            <div class="uc-icon">☕</div>
+                            <div>
+                                <div class="uc-title">Точка на Ленина</div>
+                                <div class="uc-addr">ул. Ленина, 42</div>
+                            </div>
+                        </div>
+                        <div class="status-badge open">
+                            <div class="pulse-dot"></div> Открыто
+                        </div>
+                    </div>
+
+                    <div class="uc-metrics">
+                        <div class="metric">
+                            <span class="m-label">Выручка сегодня</span>
+                            <span class="m-val">42,500 ₽</span>
+                        </div>
+                        <div class="metric">
+                            <span class="m-label">Чеков</span>
+                            <span class="m-val">128</span>
+                        </div>
+                    </div>
+
+                    <div class="uc-footer">
+                        <div style="font-size: 12px; color: var(--text-sec);">Смена:</div>
+                        <div class="staff-stack">
+                            <img src="https://ui-avatars.com/api/?name=Anna&background=random" class="st-img">
+                            <img src="https://ui-avatars.com/api/?name=Bob&background=random" class="st-img">
+                            <img src="https://ui-avatars.com/api/?name=Carl&background=random" class="st-img">
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="arrow-btn">→</div>
+                    </div>
+                </div>
+
+                <div class="unit-card">
+                    <div class="uc-header">
+                        <div class="uc-info">
+                            <div class="uc-icon">🥐</div>
+                            <div>
+                                <div class="uc-title">Пекарня в ТЦ</div>
+                                <div class="uc-addr">ТЦ "Плаза", 2 эт.</div>
+                            </div>
+                        </div>
+                        <div class="status-badge open">
+                            <div class="pulse-dot"></div> Открыто
+                        </div>
+                    </div>
+
+                    <div class="uc-metrics">
+                        <div class="metric">
+                            <span class="m-label">Выручка сегодня</span>
+                            <span class="m-val">28,100 ₽</span>
+                        </div>
+                        <div class="metric">
+                            <span class="m-label">Чеков</span>
+                            <span class="m-val">94</span>
+                        </div>
+                    </div>
+
+                    <div class="uc-footer">
+                        <div style="font-size: 12px; color: var(--text-sec);">Смена:</div>
+                        <div class="staff-stack">
+                            <img src="https://ui-avatars.com/api/?name=Daria&background=random" class="st-img">
+                            <img src="https://ui-avatars.com/api/?name=Elena&background=random" class="st-img">
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="arrow-btn">→</div>
+                    </div>
+                </div>
+
+                <div class="unit-card" style="opacity: 0.8;">
+                    <div class="uc-header">
+                        <div class="uc-info">
+                            <div class="uc-icon">🔒</div>
+                            <div>
+                                <div class="uc-title">Экспресс-окно</div>
+                                <div class="uc-addr">Вокзальная пл., 1</div>
+                            </div>
+                        </div>
+                        <div class="status-badge closed">
+                            Закрыто
+                        </div>
+                    </div>
+
+                    <div class="uc-metrics">
+                        <div class="metric">
+                            <span class="m-label">Выручка сегодня</span>
+                            <span class="m-val">14,800 ₽</span>
+                        </div>
+                        <div class="metric">
+                            <span class="m-label">Итог</span>
+                            <span class="m-val">Z-отчет снят</span>
+                        </div>
+                    </div>
+
+                    <div class="uc-footer">
+                        <div style="font-size: 12px; color: var(--text-sec);">Нет активных сотрудников</div>
+                        <div style="flex:1"></div>
+                        <div class="arrow-btn">→</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="unitModal">
+        <div class="modal">
+            <div class="modal-title">Добавить новую точку</div>
+            <div class="modal-form">
+                <div class="inp-group">
+                    <label>Название</label>
+                    <input type="text" class="inp-field" placeholder='Например: "Кофейня на Мира"'>
+                </div>
+                <div class="inp-group">
+                    <label>Адрес</label>
+                    <input type="text" class="inp-field" placeholder="Улица, дом, строение">
+                </div>
+                <div class="inp-group">
+                    <label>Часовой пояс</label>
+                    <input type="text" class="inp-field" value="Europe/Moscow">
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+                    <button class="btn-save" onclick="closeModal(); alert('Точка создана!')">Создать юнит</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-nav">
+        <a href="#" class="mn-item">🏠</a>
+        <a href="#" class="mn-item active">🏢</a>
+        <a href="#" class="mn-item" style="font-size: 28px; color: var(--primary);">+</a>
+        <a href="#" class="mn-item">👥</a>
+        <a href="#" class="mn-item">⚙️</a>
+    </div>
+
+    <script>
+        const modal = document.getElementById('unitModal');
+
+        function openModal() {
+            modal.classList.add('open');
+        }
+
+        function closeModal() {
+            modal.classList.remove('open');
+        }
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    </script>
+
+</body>
+</html>
