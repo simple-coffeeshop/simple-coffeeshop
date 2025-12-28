@@ -1,0 +1,21 @@
+{
+	"name": "@simple-coffeeshop/web",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"lint": "biome check ."
+	},
+	"devDependencies": {
+		"@vitejs/plugin-react": "^5.1.2",
+		"sass": "^1.97.1",
+		"vite": "^7.3.0"
+	},
+	"dependencies": {
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3"
+	}
+}

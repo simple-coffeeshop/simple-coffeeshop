@@ -5,23 +5,11 @@
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
-	"files": {
-		"ignoreUnknown": false
-	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
+		"indentStyle": "space",
+		"indentWidth": 2,
+		"lineWidth": 100
 	},
 	"assist": {
 		"enabled": true,
@@ -30,5 +18,54 @@
 				"organizeImports": "on"
 			}
 		}
-	}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "error",
+				"noArrayIndexKey": "error"
+			},
+			"style": {
+				"useConsistentArrayType": {
+					"level": "error",
+					"options": {
+						"syntax": "shorthand"
+					}
+				}
+			},
+			"performance": {
+				"noAccumulatingSpread": "error"
+			},
+			"a11y": {
+				"useButtonType": "error",
+				"useValidAnchor": "error"
+			}
+		}
+	},
+	"css": {
+		"parser": {
+			"cssModules": true,
+			"tailwindDirectives": true
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.css"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noUnknownAtRules": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.md"],
+			"formatter": {
+				"lineWidth": 120
+			}
+		}
+	]
 }
