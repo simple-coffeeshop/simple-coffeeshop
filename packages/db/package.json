@@ -5,6 +5,8 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
+    "test": "NODE_ENV=test vitest run",
+    "test:push": "NODE_ENV=test prisma db push --env-file ../../.env",
     "generate": "prisma generate",
     "push": "prisma db push"
   },

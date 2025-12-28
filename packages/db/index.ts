@@ -1,4 +1,3 @@
-// packages/db/index.ts
 import { PrismaClient } from "@prisma/client";
 import { prismaConfig } from "./prisma.config";
 
@@ -6,9 +5,6 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-/**
- * Основной инстанс Prisma для системных операций.
- */
 export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaConfig);
 
 if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
@@ -16,20 +12,18 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 }
 
 /**
- * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
- * Автоматически инжектит businessId во все CRUD операции.
+ * [CRITICAL] Isolated Client для Multi-tenancy.
+ * Автоматически фильтрует Unit, Enterprise и User по businessId.
  */
 export const createIsolatedClient = (businessId: string) => {
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Модели, требующие изоляции на уровне бизнеса
           const tenantModels = ["Unit", "Enterprise", "User"];
-
           if (tenantModels.includes(model)) {
             if (operation === "create") {
-              // @ts-expect-error - Prisma extension types can be tricky
+              // @ts-expect-error - Инъекция бизнес-ключа
               args.data.businessId = businessId;
             } else if (
               [
@@ -42,7 +36,7 @@ export const createIsolatedClient = (businessId: string) => {
                 "deleteMany",
               ].includes(operation)
             ) {
-              // @ts-expect-error - Inject businessId filter
+              // @ts-expect-error - Фильтрация по бизнес-ключу
               args.where = { ...args.where, businessId };
             }
           }
