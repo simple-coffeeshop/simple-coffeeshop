@@ -10,6 +10,7 @@
     "db": "pnpm --filter @simple-coffeeshop/db",
     "api": "pnpm --filter @simple-coffeeshop/api",
     "web": "pnpm --filter @simple-coffeeshop/web",
+    "ui": "pnpm --filter @simple-coffeeshop/ui",
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "biome check .",
