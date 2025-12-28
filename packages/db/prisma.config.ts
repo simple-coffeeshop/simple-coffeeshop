@@ -1,10 +1,8 @@
+// packages/db/prisma.config.ts
+
 import type { Prisma } from "@prisma/client";
 import { defineConfig } from "prisma/config";
 
-/**
- * [EVAS_PROTIP]: В Prisma 7 для устранения TS2345 мы уходим от 'as const'.
- * Мы явно типизируем объект как Prisma.PrismaClientOptions.
- */
 export default defineConfig({
   schema: "prisma/schema",
   datasource: {
@@ -12,6 +10,10 @@ export default defineConfig({
   },
 });
 
+/**
+ * [EVAS_PROTIP]: Мы используем явное приведение к Prisma.LogLevel[],
+ * чтобы избежать ошибки TS2345 при создании PrismaClient.
+ */
 export const prismaConfig: Prisma.PrismaClientOptions = {
   log: (process.env.NODE_ENV === "development"
     ? ["query", "info", "warn", "error"]
