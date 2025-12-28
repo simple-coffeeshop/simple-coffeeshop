@@ -1,111 +1,69 @@
 // packages/db/prisma/schema/network.prisma
+// Модуль 00: Core Network & Identity
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String?   // Для авторизации по паролю
-  firstName     String?
-  lastName      String?
-  
-  // Базовая иерархия
-  role          UserRole  @default(USER)
-  
-  businessId    String
-  
-  // Гибкие разрешения
-  customRoles   UserCustomRole[]    // Шорткаты (напр. "Технолог")
-  permissions   PermissionOverride[] // Индивидуальные атомы прав
-  
-  // Связи для процесса Handshake
-  transfersFrom Handshake[] @relation("FormerOwner")
-  transfersTo   Handshake[] @relation("NewOwner")
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model Business {
+  id              String          @id @default(cuid())
+  name            String
+  is_archived     Boolean         @default(false)
+  ownerId         String
+  newOwnerId      String?
+  handshakeStatus HandshakeStatus @default(IDLE)
+  handshakeAt     DateTime?
 
-  @@index([businessId])
-  @@index([email])
+  enterprises Enterprise[]
+  members     Member[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([ownerId])
 }
 
-model Handshake {
-  id            String    @id @default(cuid())
-  businessId    String
-  
-  formerOwnerId String
-  formerOwner   User      @relation("FormerOwner", fields: [formerOwnerId], references: [id])
-  
-  newOwnerId    String
-  newOwner      User      @relation("NewOwner", fields: [newOwnerId], references: [id])
-  
-  status        HandshakeStatus @default(PENDING)
-  createdAt     DateTime  @default(now())
-  expiresAt     DateTime  // Должно быть createdAt + 168 часов
-  
-  @@index([businessId])
-}
-
-model CustomRole {
-  id            String    @id @default(cuid())
-  name          String    // "Технолог", "Шеф-бариста"
-  businessId    String
-  permissions   String[]  // Атомы прав (напр. "ttk.edit")
-  users         UserCustomRole[]
+model Enterprise {
+  id          String   @id @default(cuid())
+  name        String
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  units       Unit[]
+  is_archived Boolean  @default(false)
 
   @@index([businessId])
 }
 
-model UserCustomRole {
-  userId       String
-  user         User       @relation(fields: [userId], references: [id])
-  customRoleId String
-  customRole   CustomRole @relation(fields: [customRoleId], references: [id])
+model Unit {
+  id           String     @id @default(cuid())
+  name         String
+  address      String?
+  timezone     String     @default("UTC")
+  capabilities String[]
+  tags         String[]
+  allowed_ip   String?
+  enterpriseId String
+  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id])
+  businessId   String
+  is_archived  Boolean    @default(false)
 
-  @@id([userId, customRoleId])
+  @@index([businessId])
+  @@index([enterpriseId])
 }
 
-model PermissionOverride {
+model Member {
   id         String   @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  permission String   // Атом права (напр. "schedule.edit")
-  value      Boolean  @default(true)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  role       Role     @default(STAFF)
 
-  @@index([userId])
-}
-
-// Модели из Module 09 (Assets)
-model Asset {
-  id              String   @id @default(cuid())
-  name            String
-  serialNumber    String?
-  unitId          String
-  businessId      String
-  status          AssetStatus @default(OPERATIONAL)
-  criticality     Int      @default(1)
-  
-  createdAt       DateTime @default(now())
-
-  @@index([unitId])
+  @@unique([userId, businessId])
   @@index([businessId])
-}
-
-enum UserRole {
-  SUPERUSER
-  OWNER
-  CO_OWNER // Бывший OWNER в процессе передачи
-  USER
 }
 
 enum HandshakeStatus {
+  IDLE
   PENDING
-  COMPLETED
-  REVOKED // Мгновенная отмена
 }
 
-enum AssetStatus {
-  OPERATIONAL
-  WARNING
-  CRITICAL_FAILURE
-  MAINTENANCE
-  RETIRED
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
 }
