@@ -14,19 +14,19 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 
 /**
  * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
- * Обновлен под актуальные модели: Unit, Enterprise, Member.
+ * Автоматически инжектит businessId во все операции.
  */
 export const createIsolatedClient = (businessId: string) => {
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Модели из network.prisma, имеющие поле businessId
-          const tenantModels = ["Unit", "Enterprise", "Member"];
+          // Расширенный список моделей для полной изоляции бизнеса
+          const tenantModels = ["User", "Unit", "Enterprise", "Asset", "Handshake", "CustomRole"];
 
           if (tenantModels.includes(model)) {
             if (operation === "create") {
-              // @ts-expect-error - Инъекция бизнес-ключа
+              // @ts-expect-error - Prisma extension mapping
               args.data.businessId = businessId;
             } else if (
               [
@@ -39,7 +39,7 @@ export const createIsolatedClient = (businessId: string) => {
                 "deleteMany",
               ].includes(operation)
             ) {
-              // @ts-expect-error - Фильтрация по бизнес-ключу
+              // @ts-expect-error - Filter by businessId
               args.where = { ...args.where, businessId };
             }
           }

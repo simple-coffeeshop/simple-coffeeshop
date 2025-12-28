@@ -1,6 +1,30 @@
 // packages/db/prisma/schema/network.prisma
 // Модуль 00: Core Network & Identity
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String? // Для авторизации по паролю
+  firstName    String?
+  lastName     String?
+  role         UserRole @default(USER)
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  customRoles UserCustomRole[]
+  permissions PermissionOverride[]
+
+  transfersFrom Handshake[] @relation("FormerOwner")
+  transfersTo   Handshake[] @relation("NewOwner")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([email])
+}
+
 model Business {
   id              String          @id @default(cuid())
   name            String
@@ -11,9 +35,13 @@ model Business {
   handshakeAt     DateTime?
 
   enterprises Enterprise[]
-  members     Member[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  users       User[]
+  units       Unit[]
+  assets      Asset[]
+  handshakes  Handshake[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ownerId])
 }
@@ -30,40 +58,110 @@ model Enterprise {
 }
 
 model Unit {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
   address      String?
-  timezone     String     @default("UTC")
+  timezone     String   @default("UTC")
   capabilities String[]
   tags         String[]
   allowed_ip   String?
+
   enterpriseId String
   enterprise   Enterprise @relation(fields: [enterpriseId], references: [id])
-  businessId   String
-  is_archived  Boolean    @default(false)
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  is_archived Boolean @default(false)
+  assets      Asset[]
 
   @@index([businessId])
   @@index([enterpriseId])
 }
 
-model Member {
+model Handshake {
   id         String   @id @default(cuid())
-  userId     String
   businessId String
   business   Business @relation(fields: [businessId], references: [id])
-  role       Role     @default(STAFF)
 
-  @@unique([userId, businessId])
+  formerOwnerId String
+  formerOwner   User   @relation("FormerOwner", fields: [formerOwnerId], references: [id])
+
+  newOwnerId String
+  newOwner   User   @relation("NewOwner", fields: [newOwnerId], references: [id])
+
+  status    HandshakeStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  expiresAt DateTime
+
   @@index([businessId])
+}
+
+model CustomRole {
+  id          String           @id @default(cuid())
+  name        String
+  businessId  String
+  permissions String[]
+  users       UserCustomRole[]
+
+  @@index([businessId])
+}
+
+model UserCustomRole {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  customRoleId String
+  customRole   CustomRole @relation(fields: [customRoleId], references: [id])
+
+  @@id([userId, customRoleId])
+}
+
+model PermissionOverride {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id])
+  permission String
+  value      Boolean @default(true)
+
+  @@index([userId])
+}
+
+model Asset {
+  id           String   @id @default(cuid())
+  name         String
+  serialNumber String?
+  unitId       String
+  unit         Unit     @relation(fields: [unitId], references: [id])
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
+
+  status      AssetStatus @default(OPERATIONAL)
+  criticality Int         @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([unitId])
+  @@index([businessId])
+}
+
+enum UserRole {
+  SUPERUSER
+  OWNER
+  CO_OWNER
+  USER
 }
 
 enum HandshakeStatus {
   IDLE
   PENDING
+  COMPLETED
+  REVOKED
 }
 
-enum Role {
-  OWNER
-  MANAGER
-  STAFF
+enum AssetStatus {
+  OPERATIONAL
+  WARNING
+  CRITICAL_FAILURE
+  MAINTENANCE
+  RETIRED
 }

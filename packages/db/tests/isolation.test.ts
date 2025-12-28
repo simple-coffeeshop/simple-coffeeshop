@@ -1,53 +1,63 @@
-// packages/db/index.ts
-import { PrismaClient } from "@prisma/client";
-import { prismaConfig } from "../prisma.config";
+// packages/db/tests/isolation.test.ts
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createIsolatedClient, prisma } from "../index";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+describe("Database Multi-tenancy Isolation", () => {
+  const BUSINESS_A = "business_alpha";
+  const BUSINESS_B = "business_beta";
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaConfig);
+  const clientA = createIsolatedClient(BUSINESS_A);
+  const clientB = createIsolatedClient(BUSINESS_B);
 
-if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+  beforeAll(async () => {
+    // Очистка в правильном порядке
+    await prisma.unit.deleteMany();
+    await prisma.enterprise.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.business.deleteMany();
 
-/**
- * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
- * Работает с актуальными моделями: Unit, Enterprise, Member.
- */
-export const createIsolatedClient = (businessId: string) => {
-  return prisma.$extends({
-    query: {
-      $allModels: {
-        async $allOperations({ model, operation, args, query }) {
-          const tenantModels = ["Unit", "Enterprise", "Member"];
-
-          if (tenantModels.includes(model)) {
-            if (operation === "create") {
-              // @ts-expect-error - Prisma extension mapping
-              args.data.businessId = businessId;
-            } else if (
-              [
-                "findFirst",
-                "findUnique",
-                "findMany",
-                "update",
-                "updateMany",
-                "delete",
-                "deleteMany",
-              ].includes(operation)
-            ) {
-              // @ts-expect-error - Filter by businessId
-              args.where = { ...args.where, businessId };
-            }
-          }
-          return query(args);
-        },
-      },
-    },
+    // Создаем корневые записи бизнесов
+    await prisma.business.createMany({
+      data: [
+        { id: BUSINESS_A, name: "Alpha Biz", ownerId: "owner_a" },
+        { id: BUSINESS_B, name: "Beta Biz", ownerId: "owner_b" },
+      ],
+    });
   });
-};
 
-export type IsolatedPrismaClient = ReturnType<typeof createIsolatedClient>;
-export * from "@prisma/client";
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  it("should auto-inject businessId on create", async () => {
+    const enterprise = await clientA.enterprise.create({
+      data: { name: "Alpha Ent" },
+    });
+
+    expect(enterprise.businessId).toBe(BUSINESS_A);
+
+    const unit = await clientA.unit.create({
+      data: {
+        name: "Alpha Shop",
+        enterpriseId: enterprise.id,
+        capabilities: ["💰"],
+      },
+    });
+
+    expect(unit.businessId).toBe(BUSINESS_A);
+  });
+
+  it("should filter results by businessId", async () => {
+    const entB = await prisma.enterprise.create({
+      data: { name: "Beta Ent", businessId: BUSINESS_B },
+    });
+
+    const resultsA = await clientA.enterprise.findMany();
+    expect(resultsA).toHaveLength(1);
+    expect(resultsA.find((e) => e.id === entB.id)).toBeUndefined();
+
+    const resultsB = await clientB.enterprise.findMany();
+    expect(resultsB).toHaveLength(1);
+    expect(resultsB[0].id).toBe(entB.id);
+  });
+});
