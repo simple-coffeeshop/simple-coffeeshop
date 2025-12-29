@@ -14,8 +14,7 @@ model User {
   business   Business @relation("BusinessMembers", fields: [businessId], references: [id])
 
   // Связь как владельца (ОПЦИОНАЛЬНО)
-  ownedBusiness Business?
-  @relation("BusinessOwner")
+  ownedBusiness Business?            @relation("BusinessOwner")
   customRoles   UserCustomRole[]
   permissions   PermissionOverride[]
 
@@ -41,12 +40,11 @@ model Business {
   newOwnerId      String?
   handshakeStatus HandshakeStatus @default(IDLE)
   handshakeAt     DateTime?
-
-  enterprises Enterprise[]
-  users       User[]       @relation("BusinessMembers")
-  units       Unit[]
-  assets      Asset[]
-  handshakes  Handshake[]
+  enterprises     Enterprise[]
+  users           User[]          @relation("BusinessMembers")
+  units           Unit[]
+  assets          Asset[]
+  handshakes      Handshake[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,19 +60,18 @@ model Enterprise {
   units       Unit[]
   is_archived Boolean  @default(false)
 
-  @@unique([name, businessId]) // Имена уникальны внутри бизнеса
+  @@unique([name, businessId])
   @@index([businessId])
 }
 
 model Unit {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
   address      String?
-  timezone     String   @default("UTC")
+  timezone     String     @default("UTC")
   capabilities String[]
   tags         String[]
   allowed_ip   String?
-
   enterpriseId String
   enterprise   Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
 
