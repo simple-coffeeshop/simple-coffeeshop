@@ -1,6 +1,7 @@
 import { z } from "zod";
 export declare const authRouter: import("@trpc/server").TRPCBuiltRouter<{
     ctx: {
+        prisma: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
         db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
             result: {};
             model: {};
@@ -47,6 +48,7 @@ export declare const authRouter: import("@trpc/server").TRPCBuiltRouter<{
         };
         output: {
             token: string;
+            businessId: string;
         };
         meta: object;
     }>;

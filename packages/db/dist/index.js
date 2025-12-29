@@ -23,14 +23,27 @@ export const createIsolatedClient = (businessId) => {
         query: {
             $allModels: {
                 async $allOperations({ model, operation, args, query }) {
-                    const tenantModels = ["User", "Unit", "Enterprise", "Asset", "Handshake", "CustomRole"];
+                    const tenantModels = [
+                        "User",
+                        "Unit",
+                        "Enterprise",
+                        "Asset",
+                        "Handshake",
+                        "CustomRole",
+                        "PermissionOverride",
+                        "UserCustomRole",
+                    ];
                     if (tenantModels.includes(model)) {
+                        // Исправление findUnique -> findFirst для поддержки фильтра businessId
+                        if (operation === "findUnique") {
+                            operation = "findFirst";
+                        }
                         if (operation === "create") {
-                            // @ts-expect-error - Prisma extension mapping
+                            // @ts-expect-error
                             args.data.businessId = businessId;
                         }
-                        else if (["findFirst", "findUnique", "findMany", "update", "updateMany", "delete", "deleteMany"].includes(operation)) {
-                            // @ts-expect-error - Filter by businessId
+                        else if (["findFirst", "findMany", "update", "updateMany", "delete", "deleteMany"].includes(operation)) {
+                            // @ts-expect-error
                             args.where = { ...args.where, businessId };
                         }
                     }

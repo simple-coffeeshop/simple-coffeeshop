@@ -4,6 +4,7 @@
  */
 export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<{
     ctx: {
+        prisma: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
         db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
             result: {};
             model: {};
@@ -37,6 +38,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<{
 }, import("@trpc/server").TRPCDecorateCreateRouterOptions<{
     auth: import("@trpc/server").TRPCBuiltRouter<{
         ctx: {
+            prisma: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
             db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
                 result: {};
                 model: {};
@@ -83,6 +85,7 @@ export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<{
             };
             output: {
                 token: string;
+                businessId: string;
             };
             meta: object;
         }>;

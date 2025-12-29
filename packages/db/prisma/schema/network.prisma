@@ -4,19 +4,19 @@
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String? // Для авторизации по паролю
+  passwordHash String?
   firstName    String?
   lastName     String?
   role         UserRole @default(USER)
 
+  // Связь с бизнесом как участника (ОБЯЗАТЕЛЬНО)
   businessId String
-  business   Business @relation("BusinessUsers", fields: [businessId], references: [id])
+  business   Business @relation("BusinessMembers", fields: [businessId], references: [id])
 
-  // Обратная связь для владения бизнесом
-  ownedBusiness Business? @relation("BusinessOwner")
-
-  customRoles UserCustomRole[]
-  permissions PermissionOverride[]
+  // Связь как владельца (ОПЦИОНАЛЬНО)
+  ownedBusiness Business?            @relation("BusinessOwner")
+  customRoles   UserCustomRole[]
+  permissions   PermissionOverride[]
 
   transfersFrom Handshake[] @relation("FormerOwner")
   transfersTo   Handshake[] @relation("NewOwner")
@@ -33,16 +33,16 @@ model Business {
   name        String
   is_archived Boolean @default(false)
 
-  // Связь с владельцем
-  ownerId String @unique
-  owner   User   @relation("BusinessOwner", fields: [ownerId], references: [id])
+  // [EVAS_SYNC]: Сделали опциональным для логики "SU создает первым"
+  ownerId String? @unique
+  owner   User?   @relation("BusinessOwner", fields: [ownerId], references: [id])
 
   newOwnerId      String?
   handshakeStatus HandshakeStatus @default(IDLE)
   handshakeAt     DateTime?
 
   enterprises Enterprise[]
-  users       User[]       @relation("BusinessUsers")
+  users       User[]       @relation("BusinessMembers")
   units       Unit[]
   assets      Asset[]
   handshakes  Handshake[]
