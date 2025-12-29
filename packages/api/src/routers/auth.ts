@@ -1,30 +1,25 @@
 // packages/api/src/routers/auth.ts
-import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
+import { RequestMagicLinkSchema, VerifyTokenSchema } from "../validators/auth.schema";
 
 export const authRouter = router({
-  requestMagicLink: publicProcedure.input(z.object({ email: z.email() })).mutation(async ({ input, ctx }) => {
-    const email = input.email.toLowerCase();
-
-    // [EVAS_SYNC]: Используем глобальный prisma, так как мы еще не знаем businessId
+  requestMagicLink: publicProcedure.input(RequestMagicLinkSchema).mutation(async ({ input, ctx }) => {
     const user = await ctx.prisma.user.findFirst({
-      where: { email },
+      where: { email: input.email },
     });
 
     if (!user) {
-      // Для безопасности возвращаем успех, даже если пользователя нет
-      console.warn(`[AUTH]: Попытка входа для несуществующего email: ${email}`);
-      return { success: true };
+      ctx.logger.warn({ email: input.email }, "Magic link requested for unknown email");
+      return { success: true }; // Защита от перебора
     }
 
-    console.log(`[MAGIC LINK]: Ссылка генерируется для ${user.email} (Business: ${user.businessId})`);
+    // TODO: Интеграция с сервисом отправки почты
+    ctx.logger.info({ userId: user.id }, "Magic link generated");
+
     return { success: true };
   }),
 
-  verify: publicProcedure.input(z.object({ token: z.string() })).mutation(async () => {
-    return {
-      token: "session_jwt_mock",
-      businessId: "mock_business_id_from_token",
-    };
+  verify: publicProcedure.input(VerifyTokenSchema).mutation(async () => {
+    return { token: "mock_jwt", businessId: "mock_biz" };
   }),
 });
