@@ -1,14 +1,40 @@
 import { TRPCError } from "@trpc/server";
+/**
+ * [EVAS_SYNC]: Контекст tRPC теперь поддерживает Multi-tenancy.
+ * Извлекаем businessId и создаем изолированный клиент.
+ */
 export declare const createTRPCContext: (opts: {
     req: Request;
 }) => Promise<{
-    db: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
+    db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }, {}>, import("@prisma/client").Prisma.TypeMapCb<import("@prisma/client").Prisma.PrismaClientOptions>, {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }> | null;
     userId: string | null;
+    businessId: string | null;
 }>;
 export declare const router: import("@trpc/server").TRPCRouterBuilder<{
     ctx: {
-        db: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
+        db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
+            result: {};
+            model: {};
+            query: {};
+            client: {};
+        }, {}>, import("@prisma/client").Prisma.TypeMapCb<import("@prisma/client").Prisma.PrismaClientOptions>, {
+            result: {};
+            model: {};
+            query: {};
+            client: {};
+        }> | null;
         userId: string | null;
+        businessId: string | null;
     };
     meta: object;
     errorShape: {
@@ -25,8 +51,48 @@ export declare const router: import("@trpc/server").TRPCRouterBuilder<{
     transformer: true;
 }>;
 export declare const publicProcedure: import("@trpc/server").TRPCProcedureBuilder<{
-    db: import("@prisma/client").PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
+    db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }, {}>, import("@prisma/client").Prisma.TypeMapCb<import("@prisma/client").Prisma.PrismaClientOptions>, {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }> | null;
     userId: string | null;
+    businessId: string | null;
 }, object, object, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, false>;
+export declare const protectedProcedure: import("@trpc/server").TRPCProcedureBuilder<{
+    db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }, {}>, import("@prisma/client").Prisma.TypeMapCb<import("@prisma/client").Prisma.PrismaClientOptions>, {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }> | null;
+    userId: string | null;
+    businessId: string | null;
+}, object, {
+    businessId: string;
+    userId: string;
+    db: import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }, {}>, import("@prisma/client").Prisma.TypeMapCb<import("@prisma/client").Prisma.PrismaClientOptions>, {
+        result: {};
+        model: {};
+        query: {};
+        client: {};
+    }>;
+}, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, import("@trpc/server").TRPCUnsetMarker, false>;
 export { TRPCError };
 //# sourceMappingURL=trpc.d.ts.map
