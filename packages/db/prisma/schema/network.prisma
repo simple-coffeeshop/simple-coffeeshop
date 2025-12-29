@@ -2,19 +2,17 @@
 // Модуль 00: Core Network & Identity
 
 model User {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   email        String   @unique
   passwordHash String?
   firstName    String?
   lastName     String?
   role         UserRole @default(USER)
 
-  // Связь с бизнесом как участника (ОБЯЗАТЕЛЬНО)
   businessId String
   business   Business @relation("BusinessMembers", fields: [businessId], references: [id])
 
-  // Связь как владельца (ОПЦИОНАЛЬНО)
-  ownedBusiness Business?            @relation("BusinessOwner")
+  ownedBusiness Business? @relation("BusinessOwner")
   customRoles   UserCustomRole[]
   permissions   PermissionOverride[]
 
@@ -31,9 +29,8 @@ model User {
 model Business {
   id          String  @id @default(cuid())
   name        String
-  is_archived Boolean @default(false)
+  isArchived  Boolean @default(false) // [REF]: is_archived -> isArchived
 
-  // [EVAS_SYNC]: Сделали опциональным для логики "SU создает первым"
   ownerId String? @unique
   owner   User?   @relation("BusinessOwner", fields: [ownerId], references: [id])
 
@@ -41,7 +38,7 @@ model Business {
   handshakeStatus HandshakeStatus @default(IDLE)
   handshakeAt     DateTime?
   enterprises     Enterprise[]
-  users           User[]          @relation("BusinessMembers")
+  users           User[]       @relation("BusinessMembers")
   units           Unit[]
   assets          Asset[]
   handshakes      Handshake[]
@@ -58,28 +55,28 @@ model Enterprise {
   businessId  String
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   units       Unit[]
-  is_archived Boolean  @default(false)
+  isArchived  Boolean  @default(false) // [REF]: is_archived -> isArchived
 
   @@unique([name, businessId])
   @@index([businessId])
 }
 
 model Unit {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
   address      String?
-  timezone     String     @default("UTC")
+  timezone     String   @default("UTC")
   capabilities String[]
   tags         String[]
-  allowed_ip   String?
+  allowedIp    String?  // [REF]: allowed_ip -> allowedIp
   enterpriseId String
   enterprise   Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
 
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  is_archived Boolean @default(false)
-  assets      Asset[]
+  isArchived Boolean @default(false) // [REF]: is_archived -> isArchived
+  assets     Asset[]
 
   @@index([businessId])
   @@index([enterpriseId])
@@ -101,6 +98,8 @@ model Handshake {
   expiresAt DateTime
 
   @@index([businessId])
+  @@index([formerOwnerId]) // [NEW]: Индекс для оптимизации поиска истории
+  @@index([newOwnerId])    // [NEW]: Индекс для оптимизации поиска истории
 }
 
 model CustomRole {
