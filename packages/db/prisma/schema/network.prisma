@@ -10,7 +10,10 @@ model User {
   role         UserRole @default(USER)
 
   businessId String
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation("BusinessUsers", fields: [businessId], references: [id])
+
+  // Обратная связь для владения бизнесом
+  ownedBusiness Business? @relation("BusinessOwner")
 
   customRoles UserCustomRole[]
   permissions PermissionOverride[]
@@ -26,16 +29,20 @@ model User {
 }
 
 model Business {
-  id              String          @id @default(cuid())
-  name            String
-  is_archived     Boolean         @default(false)
-  ownerId         String
+  id          String  @id @default(cuid())
+  name        String
+  is_archived Boolean @default(false)
+
+  // Связь с владельцем
+  ownerId String @unique
+  owner   User   @relation("BusinessOwner", fields: [ownerId], references: [id])
+
   newOwnerId      String?
   handshakeStatus HandshakeStatus @default(IDLE)
   handshakeAt     DateTime?
 
   enterprises Enterprise[]
-  users       User[]
+  users       User[]       @relation("BusinessUsers")
   units       Unit[]
   assets      Asset[]
   handshakes  Handshake[]
@@ -50,10 +57,11 @@ model Enterprise {
   id          String   @id @default(cuid())
   name        String
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   units       Unit[]
   is_archived Boolean  @default(false)
 
+  @@unique([name, businessId]) // Имена уникальны внутри бизнеса
   @@index([businessId])
 }
 
@@ -67,10 +75,10 @@ model Unit {
   allowed_ip   String?
 
   enterpriseId String
-  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id])
+  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
 
   businessId String
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   is_archived Boolean @default(false)
   assets      Asset[]

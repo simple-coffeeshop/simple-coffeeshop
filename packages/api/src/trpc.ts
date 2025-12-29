@@ -1,24 +1,22 @@
 // packages/api/src/trpc.ts
-
-import { createIsolatedClient } from "@simple-coffeeshop/db";
+import { createIsolatedClient, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 /**
- * [EVAS_SYNC]: Контекст tRPC теперь поддерживает Multi-tenancy.
- * Извлекаем businessId и создаем изолированный клиент.
+ * [EVAS_SYNC]: Контекст tRPC теперь передает и глобальный prisma,
+ * и изолированный db клиент.
  */
 export const createTRPCContext = async (opts: { req: Request }) => {
   const userId = opts.req.headers.get("x-user-id");
   const businessId = opts.req.headers.get("x-business-id");
 
-  // Если businessId нет, используем глобальный prisma (для публичных или админ-задач)
-  // Но для бизнес-логики мы форсируем IsolatedClient в middleware
   const db = businessId ? createIsolatedClient(businessId) : null;
 
   return {
-    db,
+    prisma, // Глобальный клиент (для поиска пользователя по email при login)
+    db, // Изолированный клиент (для бизнес-операций)
     userId,
     businessId,
   };
@@ -37,9 +35,6 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
   },
 });
 
-/**
- * Middleware для проверки авторизации и наличия бизнес-контекста
- */
 const isAuthed = t.middleware(({ next, ctx }) => {
   if (!ctx.userId) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "User not identified" });
@@ -53,7 +48,7 @@ const isAuthed = t.middleware(({ next, ctx }) => {
     ctx: {
       userId: ctx.userId,
       businessId: ctx.businessId,
-      db: ctx.db, // Здесь гарантированно IsolatedClient
+      db: ctx.db,
     },
   });
 });
