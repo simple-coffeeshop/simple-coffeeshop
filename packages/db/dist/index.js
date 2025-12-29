@@ -2,22 +2,21 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
-import { prismaConfig } from "./prisma.config";
+import { dbUrl, prismaConfig } from "./prisma.config";
 /**
- * [EVAS_SYNC]: Настройка драйвер-адаптера для PostgreSQL.
- * Это решает проблему "engine type client" в Prisma 7.
+ * [EVAS_SYNC]: Используем драйвер-адаптер pg для поддержки Prisma 7.
+ * Это убирает ошибку "engine type client" и типизирует connectionString.
  */
-const connectionString = prismaConfig.datasources?.db?.url;
-const pool = new Pool({ connectionString });
+const pool = new Pool({ connectionString: dbUrl });
 const adapter = new PrismaPg(pool);
 const globalForPrisma = globalThis;
-// Передаем созданный адаптер в конструктор PrismaClient
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ ...prismaConfig, adapter });
 if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = prisma;
 }
 /**
- * [CRITICAL] Isolated Client с поддержкой адаптера
+ * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
+ * Автоматически инжектит businessId во все операции.
  */
 export const createIsolatedClient = (businessId) => {
     return prisma.$extends({
@@ -27,7 +26,7 @@ export const createIsolatedClient = (businessId) => {
                     const tenantModels = ["User", "Unit", "Enterprise", "Asset", "Handshake", "CustomRole"];
                     if (tenantModels.includes(model)) {
                         if (operation === "create") {
-                            // @ts-expect-error - Injection
+                            // @ts-expect-error - Prisma extension mapping
                             args.data.businessId = businessId;
                         }
                         else if ([
@@ -39,7 +38,7 @@ export const createIsolatedClient = (businessId) => {
                             "delete",
                             "deleteMany",
                         ].includes(operation)) {
-                            // @ts-expect-error - Filter
+                            // @ts-expect-error - Filter by businessId
                             args.where = { ...args.where, businessId };
                         }
                     }
