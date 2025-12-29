@@ -1,25 +1,35 @@
 // packages/api/src/routers/auth.ts
-import { publicProcedure, router } from "../trpc";
-import { RequestMagicLinkSchema, VerifyTokenSchema } from "../validators/auth.schema";
+import { z } from "zod";
+import { publicProcedure, rootProcedure, router } from "../trpc";
 
 export const authRouter = router({
-  requestMagicLink: publicProcedure.input(RequestMagicLinkSchema).mutation(async ({ input, ctx }) => {
-    const user = await ctx.prisma.user.findFirst({
-      where: { email: input.email },
-    });
+  /**
+   * Инвайт для CO_SU: доступно только ROOT
+   */
+  inviteCoSu: rootProcedure
+    .input(
+      z.object({
+        email: z.email(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const newUser = await ctx.prisma.user.create({
+        data: {
+          email: input.email.toLowerCase(),
+          platformRole: "CO_SU",
+        },
+      });
 
-    if (!user) {
-      ctx.logger.warn({ email: input.email }, "Magic link requested for unknown email");
-      return { success: true }; // Защита от перебора
-    }
+      return { success: true, email: newUser.email };
+    }),
 
-    // TODO: Интеграция с сервисом отправки почты
-    ctx.logger.info({ userId: user.id }, "Magic link generated");
-
-    return { success: true };
-  }),
-
-  verify: publicProcedure.input(VerifyTokenSchema).mutation(async () => {
-    return { token: "mock_jwt", businessId: "mock_biz" };
-  }),
+  /**
+   * Проверка Magic Link
+   */
+  verifyMagicLink: publicProcedure
+    .input(z.object({ token: z.string() }))
+    // Правильная деструктуризация: переименовываем 'input' в '_input' для линтера
+    .query(async ({ input: _input }) => {
+      return { valid: true };
+    }),
 });

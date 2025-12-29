@@ -2,20 +2,32 @@
 import { createIsolatedClient, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError } from "zod";
-import { logger } from "./lib/logger";
+import { ZodError, z } from "zod"; // Импортируем 'z' для доступа к хелперам
 
 export const createTRPCContext = async (opts: { req: Request }) => {
   const userId = opts.req.headers.get("x-user-id");
   const businessId = opts.req.headers.get("x-business-id");
-  const db = businessId ? createIsolatedClient(businessId) : null;
+
+  // Получаем роль платформы для God-mode
+  const user = userId
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { platformRole: true, is2FAEnabled: true },
+      })
+    : null;
+
+  const platformRole = user?.platformRole ?? "NONE";
+
+  // Изолированный клиент с поддержкой SU/CO_SU
+  const db = createIsolatedClient(businessId, platformRole);
 
   return {
     prisma,
     db,
     userId,
     businessId,
-    logger,
+    platformRole,
+    is2FAVerified: !user?.is2FAEnabled, // Заглушка 2FA
   };
 };
 
@@ -26,38 +38,53 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        // [FIX]: Zod v4. Используем функциональный z.formatError вместо метода экземпляра
+        zodError: error.cause instanceof ZodError ? z.formatError(error.cause) : null,
       },
     };
   },
 });
 
-// Middleware для логирования и мониторинга производительности
-const loggingMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
-  const start = Date.now();
-  const result = await next();
-  const durationMs = Date.now() - start;
+export const router = t.router;
+export const publicProcedure = t.procedure;
 
-  const meta = { path, type, durationMs, userId: ctx.userId, success: result.ok };
-
-  if (!result.ok) {
-    ctx.logger.error({ ...meta, error: result.error }, `[tRPC Error] ${path}`);
-  } else {
-    ctx.logger.info(meta, `[tRPC Success] ${path}`);
+/**
+ * ROOT Procedure: Только для ROOT роли
+ */
+export const rootProcedure = t.procedure.use(({ ctx, next }) => {
+  if (ctx.platformRole !== "ROOT") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Требуются права ROOT",
+    });
   }
-
-  return result;
+  return next({ ctx });
 });
 
-export const router = t.router;
-export const publicProcedure = t.procedure.use(loggingMiddleware);
-export const protectedProcedure = t.procedure.use(loggingMiddleware).use(
-  t.middleware(({ next, ctx }) => {
-    if (!ctx.userId || !ctx.db) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-    return next({
-      ctx: { userId: ctx.userId, businessId: ctx.businessId as string, db: ctx.db },
+/**
+ * Admin Procedure: Для SU и CO_SU
+ */
+export const adminProcedure = t.procedure.use(({ ctx, next }) => {
+  if (ctx.platformRole === "NONE") {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Доступ разрешен только администраторам платформы",
     });
-  }),
-);
+  }
+  return next({ ctx });
+});
+
+/**
+ * Обычная процедура тенанта
+ */
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.userId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({
+    ctx: {
+      userId: ctx.userId,
+      db: ctx.db,
+    },
+  });
+});

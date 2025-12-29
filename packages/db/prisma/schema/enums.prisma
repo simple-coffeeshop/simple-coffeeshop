@@ -1,0 +1,36 @@
+enum PlatformRole {
+  ROOT // God-mode
+  CO_SU // Platform Admin
+  NONE
+}
+
+enum Capability {
+  DATA // 📦
+  KITCHEN // 🔪
+  STAFF // 👥
+  SUPPLIER // 🚚
+  CASH // 💰
+  CERTIFICATION // 🎓
+}
+
+enum UserRole {
+  SUPERUSER
+  OWNER
+  CO_OWNER
+  USER
+}
+
+enum HandshakeStatus {
+  IDLE
+  PENDING
+  COMPLETED
+  REVOKED
+}
+
+enum AssetStatus {
+  OPERATIONAL
+  WARNING
+  CRITICAL_FAILURE
+  MAINTENANCE
+  RETIRED
+}

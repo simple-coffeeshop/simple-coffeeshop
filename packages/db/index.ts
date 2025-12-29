@@ -1,56 +1,76 @@
-// packages/db/index.ts
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Prisma, PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
-import { dbUrl, prismaConfig } from "./prisma.config";
+// packages/db/src/index.ts
+import { type PlatformRole, PrismaClient } from "@prisma/client";
+
+export const prisma = new PrismaClient({
+  log: ["query", "info", "warn", "error"],
+});
 
 /**
- * [EVAS_SYNC]: Используем драйвер-адаптер pg для поддержки Prisma 7.
- * Это убирает ошибку "engine type client" и типизирует connectionString.
+ * Улучшенный Isolated Client с поддержкой SU/CO_SU и строгой типизацией
  */
-const pool = new Pool({ connectionString: dbUrl });
-const adapter = new PrismaPg(pool);
+export const createIsolatedClient = (businessId: string | null, platformRole: PlatformRole = "NONE") => {
+  // 1. Если это ROOT или CO_SU, возвращаем "чистый" клиент без фильтров
+  if (platformRole === "ROOT" || platformRole === "CO_SU") {
+    return prisma;
+  }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+  // 2. Если businessId не передан для обычного пользователя — это ошибка безопасности
+  if (!businessId) {
+    throw new Error("UNAUTHORIZED: Business ID is required for non-SU roles.");
+  }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({ ...prismaConfig, adapter });
-
-if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
-
-/**
- * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
- * Динамически инжектит businessId во все операции для моделей, где это поле присутствует.
- */
-export const createIsolatedClient = (businessId: string) => {
+  // 3. Накладываем изоляцию через расширение
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Динамическое определение тенант-моделей через метаданные DMMF
-          const modelMeta = Prisma.dmmf.datamodel.models.find((m) => m.name === model);
-          const isTenantModel = modelMeta?.fields.some((f) => f.name === "businessId");
+          // Модели, требующие изоляции по businessId
+          const tenantModels = ["Unit", "Member", "Enterprise", "Asset", "Handshake", "CustomRole"];
 
-          if (isTenantModel) {
-            // Типизируем args для безопасного доступа к data и where
-            const typedArgs = args as {
-              data?: { businessId?: string };
-              where?: { businessId?: string };
-            };
+          if (tenantModels.includes(model)) {
+            // Используем Record<string, unknown> вместо any для линтера
+            const extendedArgs = args as Record<string, unknown>;
 
-            // Исправление findUnique -> findFirst для поддержки фильтра businessId
-            if (operation === "findUnique") {
-              operation = "findFirst";
+            // Операции чтения/правки, поддерживающие фильтр 'where'
+            const whereOperations = [
+              "findFirst",
+              "findFirstOrThrow",
+              "findMany",
+              "update",
+              "updateMany",
+              "upsert",
+              "delete",
+              "deleteMany",
+              "count",
+              "aggregate",
+            ];
+
+            if (whereOperations.includes(operation)) {
+              extendedArgs.where = {
+                ...((extendedArgs.where as Record<string, unknown>) || {}),
+                businessId,
+              };
             }
 
+            // Операция создания: инъекция businessId в данные
             if (operation === "create") {
-              typedArgs.data = { ...typedArgs.data, businessId };
-            } else if (["findFirst", "findMany", "update", "updateMany", "delete", "deleteMany"].includes(operation)) {
-              typedArgs.where = { ...typedArgs.where, businessId };
+              extendedArgs.data = {
+                ...((extendedArgs.data as Record<string, unknown>) || {}),
+                businessId,
+              };
             }
+
+            if (operation === "createMany") {
+              const data = extendedArgs.data;
+              if (Array.isArray(data)) {
+                extendedArgs.data = data.map((item) => ({
+                  ...(item as Record<string, unknown>),
+                  businessId,
+                }));
+              }
+            }
+
+            return query(extendedArgs);
           }
 
           return query(args);
@@ -60,5 +80,4 @@ export const createIsolatedClient = (businessId: string) => {
   });
 };
 
-export type IsolatedPrismaClient = ReturnType<typeof createIsolatedClient>;
 export * from "@prisma/client";
