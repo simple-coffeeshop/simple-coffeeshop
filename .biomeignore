@@ -4,5 +4,8 @@ dist/
 **/dist/
 build/
 .next/
+.turbo/
 .prisma/
+.env*
 *.tsbuildinfo
+coverage/

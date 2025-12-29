@@ -1,9 +1,14 @@
 {
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
+  },
   "files": [],
   "references": [
     { "path": "./apps/web" },
     { "path": "./packages/api" },
     { "path": "./packages/db" },
     { "path": "./packages/ui" }
-  ]
+  ],
+  "exclude": ["node_modules", "dist"]
 }
