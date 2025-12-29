@@ -14,8 +14,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // Автоматически подключаем переменные и миксины во все файлы
-        // ВАЖНО: Пути должны соответствовать созданной структуре
+        // [WARNING]: Используйте только для переменных и миксинов без вывода CSS-кода
         additionalData: `
           @use "@/shared/styles/variables" as *;
           @use "@/shared/styles/mixins" as *;
@@ -25,6 +24,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: true,
+    host: "127.0.0.1",
+  },
+  build: {
+    sourcemap: true,
   },
 });
