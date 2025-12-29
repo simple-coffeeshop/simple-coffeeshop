@@ -1,12 +1,21 @@
 // packages/db/index.ts
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
-import { prismaConfig } from "./prisma.config";
+import { Pool } from "pg";
+import { dbUrl, prismaConfig } from "./prisma.config";
+
+/**
+ * [EVAS_SYNC]: Используем драйвер-адаптер pg для поддержки Prisma 7.
+ * Это убирает ошибку "engine type client" и типизирует connectionString.
+ */
+const pool = new Pool({ connectionString: dbUrl });
+const adapter = new PrismaPg(pool);
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaConfig);
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ ...prismaConfig, adapter });
 
 if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
@@ -21,7 +30,6 @@ export const createIsolatedClient = (businessId: string) => {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Расширенный список моделей для полной изоляции бизнеса
           const tenantModels = ["User", "Unit", "Enterprise", "Asset", "Handshake", "CustomRole"];
 
           if (tenantModels.includes(model)) {

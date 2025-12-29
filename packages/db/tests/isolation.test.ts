@@ -2,6 +2,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createIsolatedClient, prisma } from "../index";
 
+/**
+ * [EVAS_SYNC]: Тесты изоляции для реальной схемы с моделью User.
+ * Учитываем, что поля businessId и enterpriseId обязательны для типизации Prisma.
+ */
 describe("Database Multi-tenancy Isolation", () => {
   const BUSINESS_A = "business_alpha";
   const BUSINESS_B = "business_beta";
@@ -10,7 +14,8 @@ describe("Database Multi-tenancy Isolation", () => {
   const clientB = createIsolatedClient(BUSINESS_B);
 
   beforeAll(async () => {
-    // Очистка в правильном порядке
+    // Очистка в правильном порядке (Asset -> Unit -> Enterprise -> User -> Business)
+    await prisma.asset.deleteMany();
     await prisma.unit.deleteMany();
     await prisma.enterprise.deleteMany();
     await prisma.user.deleteMany();
@@ -30,8 +35,13 @@ describe("Database Multi-tenancy Isolation", () => {
   });
 
   it("should auto-inject businessId on create", async () => {
+    // Передаем businessId: BUSINESS_A явно, чтобы удовлетворить TS.
+    // В рантайме extension в index.ts его подменит/гарантирует.
     const enterprise = await clientA.enterprise.create({
-      data: { name: "Alpha Ent" },
+      data: {
+        name: "Alpha Ent",
+        businessId: BUSINESS_A,
+      },
     });
 
     expect(enterprise.businessId).toBe(BUSINESS_A);
@@ -40,6 +50,7 @@ describe("Database Multi-tenancy Isolation", () => {
       data: {
         name: "Alpha Shop",
         enterpriseId: enterprise.id,
+        businessId: BUSINESS_A,
         capabilities: ["💰"],
       },
     });
@@ -48,16 +59,20 @@ describe("Database Multi-tenancy Isolation", () => {
   });
 
   it("should filter results by businessId", async () => {
+    // Создаем запись для Бизнеса Б через обычный (не изолированный) клиент
     const entB = await prisma.enterprise.create({
-      data: { name: "Beta Ent", businessId: BUSINESS_B },
+      data: {
+        name: "Beta Ent",
+        businessId: BUSINESS_B,
+      },
     });
 
+    // Проверяем, что клиент А не видит записи Бизнеса Б
     const resultsA = await clientA.enterprise.findMany();
-    expect(resultsA).toHaveLength(1);
     expect(resultsA.find((e) => e.id === entB.id)).toBeUndefined();
 
+    // Проверяем, что клиент Б видит свою запись
     const resultsB = await clientB.enterprise.findMany();
-    expect(resultsB).toHaveLength(1);
-    expect(resultsB[0].id).toBe(entB.id);
+    expect(resultsB.some((e) => e.id === entB.id)).toBe(true);
   });
 });

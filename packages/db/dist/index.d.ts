@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 export declare const prisma: PrismaClient<import("@prisma/client").Prisma.PrismaClientOptions, never, import("@prisma/client/runtime/client").DefaultArgs>;
 /**
- * [CRITICAL] Isolated Client для Multi-tenancy.
- * Автоматически фильтрует Unit, Enterprise и User по businessId.
+ * [CRITICAL] Isolated Client с поддержкой адаптера
  */
 export declare const createIsolatedClient: (businessId: string) => import("@prisma/client/runtime/client").DynamicClientExtensionThis<import("@prisma/client").Prisma.TypeMap<import("@prisma/client/runtime/client").InternalArgs & {
     result: {};
