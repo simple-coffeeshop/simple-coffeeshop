@@ -1,2 +1,25 @@
+# Dependencies
 node_modules
+
+# Security (Критично: добавлен основной .env)
+.env
 .env.*
+
+# Build artifacts (Добавлено)
+dist
+.next
+.turbo
+*.tsbuildinfo
+
+# Prisma (Добавлено)
+.prisma
+
+# IDE settings (Добавлено)
+.vscode
+.idea
+*.swp
+
+# Logs & OS (Исправлено)
+pnpm-debug.log
+.DS_Store
+Thumbs.db

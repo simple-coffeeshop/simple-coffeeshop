@@ -37,15 +37,9 @@ export const createIsolatedClient = (businessId: string) => {
               // @ts-expect-error - Prisma extension mapping
               args.data.businessId = businessId;
             } else if (
-              [
-                "findFirst",
-                "findUnique",
-                "findMany",
-                "update",
-                "updateMany",
-                "delete",
-                "deleteMany",
-              ].includes(operation)
+              ["findFirst", "findUnique", "findMany", "update", "updateMany", "delete", "deleteMany"].includes(
+                operation,
+              )
             ) {
               // @ts-expect-error - Filter by businessId
               args.where = { ...args.where, businessId };

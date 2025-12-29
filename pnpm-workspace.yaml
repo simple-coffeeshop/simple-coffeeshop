@@ -10,3 +10,4 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - prisma
   - sharp
+  - simple-git-hooks

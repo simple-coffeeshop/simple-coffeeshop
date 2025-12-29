@@ -1,5 +1,5 @@
+# docker-compose.yml
 services:
-  # Основная база данных PostgreSQL
   db:
     image: postgres:18-alpine
     container_name: simple-coffeeshop-db
@@ -10,15 +10,15 @@ services:
       POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_DB_DEV},${POSTGRES_DB_TEST}
       TZ: UTC
     ports:
-      - "5432:5432"
+      - "5432:5432" # Оставлено по запросу
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user}"]
+      # Исправлено: добавлена проверка через конкретную базу данных (DEV)
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB_DEV:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
     volumes:
-      - db_data:/var/lib/postgresql/data
-      # Скрипт для создания нескольких баз данных при инициализации
+      - postgres_data:/var/lib/postgresql/data
       - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
 
   adminer:
@@ -32,4 +32,6 @@ services:
         condition: service_healthy
 
 volumes:
-  db_data:
+  # Добавлено: именованный том для удобства управления
+  postgres_data:
+    name: simple-coffeeshop-postgres-data

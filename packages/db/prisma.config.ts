@@ -13,9 +13,7 @@ const isTest = process.env.NODE_ENV === "test";
 export const dbUrl = isTest ? process.env.TEST_DATABASE_URL : process.env.DATABASE_URL;
 
 if (!dbUrl) {
-  throw new Error(
-    `[PRISMA_CONFIG]: DATABASE_URL is undefined for NODE_ENV=${process.env.NODE_ENV}`,
-  );
+  throw new Error(`[PRISMA_CONFIG]: DATABASE_URL is undefined for NODE_ENV=${process.env.NODE_ENV}`);
 }
 
 export default defineConfig({
@@ -27,8 +25,6 @@ export default defineConfig({
 
 // Здесь оставляем только стандартные опции логов
 export const prismaConfig: Prisma.PrismaClientOptions = {
-  log: (process.env.NODE_ENV === "development"
-    ? ["query", "info", "warn", "error"]
-    : ["error"]) as Prisma.LogLevel[],
+  log: (process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"]) as Prisma.LogLevel[],
   errorFormat: "pretty",
 };
