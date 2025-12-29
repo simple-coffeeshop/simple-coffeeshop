@@ -5,42 +5,31 @@ import { createIsolatedClient, prisma } from "../index";
 describe("Database Multi-tenancy Isolation", () => {
   const BUSINESS_A = "business_alpha";
   const BUSINESS_B = "business_beta";
+
   const clientA = createIsolatedClient(BUSINESS_A);
+  const clientB = createIsolatedClient(BUSINESS_B);
 
   beforeAll(async () => {
-    // Чистим всё
+    await prisma.asset.deleteMany();
+    await prisma.unit.deleteMany();
+    await prisma.enterprise.deleteMany();
     await prisma.user.deleteMany();
     await prisma.business.deleteMany();
 
-    // 1. Создаем бизнес и первого пользователя (члена бизнеса)
-    // Благодаря связи 'users', Prisma автоматически проставит businessId пользователю
+    // Создаем записи через вложенный create (соблюдаем foreign keys)
     await prisma.business.create({
       data: {
         id: BUSINESS_A,
         name: "Alpha Biz",
-        users: {
-          create: {
-            id: "owner_a",
-            email: "owner_a@test.com",
-          },
-        },
+        owner: { create: { id: "owner_a", email: "owner_a@test.com", business: { connect: { id: BUSINESS_A } } } },
       },
     });
 
-    // 2. Делаем этого пользователя владельцем (согласно твоей логике первого входа)
-    await prisma.business.update({
-      where: { id: BUSINESS_A },
-      data: { ownerId: "owner_a" },
-    });
-
-    // Повторяем для Бизнеса Б
     await prisma.business.create({
       data: {
         id: BUSINESS_B,
         name: "Beta Biz",
-        users: {
-          create: { id: "owner_b", email: "owner_b@test.com" },
-        },
+        owner: { create: { id: "owner_b", email: "owner_b@test.com", business: { connect: { id: BUSINESS_B } } } },
       },
     });
   });
@@ -50,12 +39,31 @@ describe("Database Multi-tenancy Isolation", () => {
   });
 
   it("should auto-inject businessId on create", async () => {
-    // @ts-expect-error - businessId инжектится расширением
     const enterprise = await clientA.enterprise.create({
       data: { name: "Alpha Ent" },
     });
     expect(enterprise.businessId).toBe(BUSINESS_A);
+
+    const unit = await clientA.unit.create({
+      data: {
+        name: "Alpha Shop",
+        enterpriseId: enterprise.id,
+        capabilities: ["💰"],
+      },
+    });
+    expect(unit.businessId).toBe(BUSINESS_A);
   });
 
-  // ... остальное без изменений
+  it("should filter results by businessId", async () => {
+    await prisma.enterprise.create({
+      data: { name: "Beta Ent", businessId: BUSINESS_B },
+    });
+
+    const resultsA = await clientA.enterprise.findMany();
+    expect(resultsA.find((e) => e.businessId === BUSINESS_B)).toBeUndefined();
+
+    // Используем clientB, чтобы Biome не ругался
+    const resultsB = await clientB.enterprise.findMany();
+    expect(resultsB.some((e) => e.businessId === BUSINESS_B)).toBe(true);
+  });
 });

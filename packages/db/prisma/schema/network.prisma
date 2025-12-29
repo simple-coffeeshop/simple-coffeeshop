@@ -14,7 +14,8 @@ model User {
   business   Business @relation("BusinessMembers", fields: [businessId], references: [id])
 
   // Связь как владельца (ОПЦИОНАЛЬНО)
-  ownedBusiness Business?            @relation("BusinessOwner")
+  ownedBusiness Business?
+  @relation("BusinessOwner")
   customRoles   UserCustomRole[]
   permissions   PermissionOverride[]
 
