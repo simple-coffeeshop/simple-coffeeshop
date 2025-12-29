@@ -1,5 +1,4 @@
 // packages/db/vitest.config.ts
-
 import path from "node:path";
 import dotenv from "dotenv";
 import { expand } from "dotenv-expand";
@@ -14,11 +13,8 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     testTimeout: 10000,
-    poolOptions: {
-      threads: false,
-    },
+    fileParallelism: false,
     restoreMocks: true,
     mockReset: true,
-    reporters: ["default"],
   },
 });

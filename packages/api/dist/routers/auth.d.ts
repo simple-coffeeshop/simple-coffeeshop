@@ -18,7 +18,10 @@ export declare const authRouter: import("@trpc/server").TRPCBuiltRouter<{
     meta: object;
     errorShape: {
         data: {
-            zodError: z.core.$ZodFlattenedError<unknown, string> | null;
+            zodError: {
+                (): z.core.$ZodFlattenedError<unknown, string>;
+                <U>(mapper: (issue: z.core.$ZodIssue) => U): z.core.$ZodFlattenedError<unknown, U>;
+            } | null;
             code: import("@trpc/server").TRPC_ERROR_CODE_KEY;
             httpStatus: number;
             path?: string;

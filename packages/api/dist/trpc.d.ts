@@ -39,7 +39,10 @@ export declare const router: import("@trpc/server").TRPCRouterBuilder<{
     meta: object;
     errorShape: {
         data: {
-            zodError: import("zod").ZodFlattenedError<unknown, string> | null;
+            zodError: {
+                (): import("zod").ZodFlattenedError<unknown, string>;
+                <U>(mapper: (issue: import("zod/v4/core").$ZodIssue) => U): import("zod").ZodFlattenedError<unknown, U>;
+            } | null;
             code: import("@trpc/server").TRPC_ERROR_CODE_KEY;
             httpStatus: number;
             path?: string;
