@@ -10,27 +10,40 @@ describe("Database Multi-tenancy Isolation", () => {
   const clientB = createIsolatedClient(BUSINESS_B);
 
   beforeAll(async () => {
+    // [CRITICAL] Очистка в порядке, обратном зависимостям
     await prisma.asset.deleteMany();
     await prisma.unit.deleteMany();
     await prisma.enterprise.deleteMany();
     await prisma.user.deleteMany();
     await prisma.business.deleteMany();
 
-    // Создаем записи через вложенный create (соблюдаем foreign keys)
-    await prisma.business.create({
-      data: {
-        id: BUSINESS_A,
-        name: "Alpha Biz",
-        owner: { create: { id: "owner_a", email: "owner_a@test.com", business: { connect: { id: BUSINESS_A } } } },
-      },
-    });
+    // Создаем два изолированных бизнеса через транзакцию
+    await prisma.$transaction(async (tx) => {
+      for (const bizId of [BUSINESS_A, BUSINESS_B]) {
+        // 1. Создаем бизнес (теперь ownerId опционален в схеме)
+        await tx.business.create({
+          data: {
+            id: bizId,
+            name: bizId === BUSINESS_A ? "Alpha Biz" : "Beta Biz",
+          },
+        });
 
-    await prisma.business.create({
-      data: {
-        id: BUSINESS_B,
-        name: "Beta Biz",
-        owner: { create: { id: "owner_b", email: "owner_b@test.com", business: { connect: { id: BUSINESS_B } } } },
-      },
+        // 2. Создаем владельца (Member relation через businessId)
+        const owner = await tx.user.create({
+          data: {
+            id: `owner_${bizId}`,
+            email: `owner_${bizId}@test.com`,
+            businessId: bizId,
+            role: "OWNER",
+          },
+        });
+
+        // 3. Устанавливаем связь владельца (Owner relation через ownerId)
+        await tx.business.update({
+          where: { id: bizId },
+          data: { ownerId: owner.id },
+        });
+      }
     });
   });
 
@@ -48,7 +61,6 @@ describe("Database Multi-tenancy Isolation", () => {
       data: {
         name: "Alpha Shop",
         enterpriseId: enterprise.id,
-        capabilities: ["💰"],
       },
     });
     expect(unit.businessId).toBe(BUSINESS_A);
@@ -62,7 +74,6 @@ describe("Database Multi-tenancy Isolation", () => {
     const resultsA = await clientA.enterprise.findMany();
     expect(resultsA.find((e) => e.businessId === BUSINESS_B)).toBeUndefined();
 
-    // Используем clientB, чтобы Biome не ругался
     const resultsB = await clientB.enterprise.findMany();
     expect(resultsB.some((e) => e.businessId === BUSINESS_B)).toBe(true);
   });
