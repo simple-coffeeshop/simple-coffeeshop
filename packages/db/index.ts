@@ -1,6 +1,6 @@
 // packages/db/index.ts
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { dbUrl, prismaConfig } from "./prisma.config";
 
@@ -23,38 +23,36 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 
 /**
  * [CRITICAL] Isolated Client для обеспечения Multi-tenancy.
- * Автоматически инжектит businessId во все операции.
+ * Динамически инжектит businessId во все операции для моделей, где это поле присутствует.
  */
 export const createIsolatedClient = (businessId: string) => {
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          const tenantModels = [
-            "User",
-            "Unit",
-            "Enterprise",
-            "Asset",
-            "Handshake",
-            "CustomRole",
-            "PermissionOverride",
-            "UserCustomRole",
-          ];
+          // Динамическое определение тенант-моделей через метаданные DMMF
+          const modelMeta = Prisma.dmmf.datamodel.models.find((m) => m.name === model);
+          const isTenantModel = modelMeta?.fields.some((f) => f.name === "businessId");
 
-          if (tenantModels.includes(model)) {
+          if (isTenantModel) {
+            // Типизируем args для безопасного доступа к data и where
+            const typedArgs = args as {
+              data?: { businessId?: string };
+              where?: { businessId?: string };
+            };
+
             // Исправление findUnique -> findFirst для поддержки фильтра businessId
             if (operation === "findUnique") {
               operation = "findFirst";
             }
 
             if (operation === "create") {
-              // @ts-expect-error
-              args.data.businessId = businessId;
+              typedArgs.data = { ...typedArgs.data, businessId };
             } else if (["findFirst", "findMany", "update", "updateMany", "delete", "deleteMany"].includes(operation)) {
-              // @ts-expect-error
-              args.where = { ...args.where, businessId };
+              typedArgs.where = { ...typedArgs.where, businessId };
             }
           }
+
           return query(args);
         },
       },
