@@ -1,14 +1,32 @@
 // packages/api/src/trpc.ts
+
+import type { PlatformRole } from "@simple-coffeeshop/db"; // [FIX]: Импорт типа
 import { createIsolatedClient, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError, z } from "zod"; // Импортируем 'z' для доступа к хелперам
+import { ZodError, z } from "zod";
+
+/**
+ * [NEW]: Внутренний контекст для тестов и внутренних вызовов
+ */
+export const createInnerTRPCContext = (opts: {
+  userId: string | null;
+  businessId: string | null;
+  platformRole: PlatformRole;
+  is2FAVerified: boolean;
+}) => {
+  const db = createIsolatedClient(opts.businessId, opts.platformRole);
+  return {
+    prisma,
+    db,
+    ...opts,
+  };
+};
 
 export const createTRPCContext = async (opts: { req: Request }) => {
   const userId = opts.req.headers.get("x-user-id");
   const businessId = opts.req.headers.get("x-business-id");
 
-  // Получаем роль платформы для God-mode
   const user = userId
     ? await prisma.user.findUnique({
         where: { id: userId },
@@ -18,17 +36,12 @@ export const createTRPCContext = async (opts: { req: Request }) => {
 
   const platformRole = user?.platformRole ?? "NONE";
 
-  // Изолированный клиент с поддержкой SU/CO_SU
-  const db = createIsolatedClient(businessId, platformRole);
-
-  return {
-    prisma,
-    db,
+  return createInnerTRPCContext({
     userId,
     businessId,
     platformRole,
-    is2FAVerified: !user?.is2FAEnabled, // Заглушка 2FA
-  };
+    is2FAVerified: !user?.is2FAEnabled,
+  });
 };
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
@@ -38,7 +51,6 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        // [FIX]: Zod v4. Используем функциональный z.formatError вместо метода экземпляра
         zodError: error.cause instanceof ZodError ? z.formatError(error.cause) : null,
       },
     };
@@ -48,43 +60,21 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-/**
- * ROOT Procedure: Только для ROOT роли
- */
 export const rootProcedure = t.procedure.use(({ ctx, next }) => {
   if (ctx.platformRole !== "ROOT") {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Требуются права ROOT",
-    });
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуются права ROOT" });
   }
   return next({ ctx });
 });
 
-/**
- * Admin Procedure: Для SU и CO_SU
- */
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   if (ctx.platformRole === "NONE") {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Доступ разрешен только администраторам платформы",
-    });
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Доступ только админам платформы" });
   }
   return next({ ctx });
 });
 
-/**
- * Обычная процедура тенанта
- */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.userId) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
-  return next({
-    ctx: {
-      userId: ctx.userId,
-      db: ctx.db,
-    },
-  });
+  if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+  return next({ ctx: { userId: ctx.userId, db: ctx.db } });
 });

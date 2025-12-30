@@ -1,79 +1,88 @@
-// packages/db/src/index.ts
-import { type PlatformRole, PrismaClient } from "@prisma/client";
+// packages/db/index.ts
+
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Prisma, PrismaClient } from "@prisma/client";
+import pg from "pg";
+import { dbUrl } from "./prisma.config";
+
+const pool = new pg.Pool({ connectionString: dbUrl });
+const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({
-  log: ["query", "info", "warn", "error"],
+  adapter,
+  log: process.env.NODE_ENV === "test" ? [] : ["query", "info", "warn", "error"],
 });
 
-/**
- * Улучшенный Isolated Client с поддержкой SU/CO_SU и строгой типизацией
- */
-export const createIsolatedClient = (businessId: string | null, platformRole: PlatformRole = "NONE") => {
-  // 1. Если это ROOT или CO_SU, возвращаем "чистый" клиент без фильтров
+export const createIsolatedClient = (businessId: string | null, platformRole: string = "NONE") => {
+  // ROOT и CO_SU видят всё, включая архивные записи тенантов
   if (platformRole === "ROOT" || platformRole === "CO_SU") {
     return prisma;
   }
 
-  // 2. Если businessId не передан для обычного пользователя — это ошибка безопасности
-  if (!businessId) {
-    throw new Error("UNAUTHORIZED: Business ID is required for non-SU roles.");
-  }
-
-  // 3. Накладываем изоляцию через расширение
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Модели, требующие изоляции по businessId
-          const tenantModels = ["Unit", "Member", "Enterprise", "Asset", "Handshake", "CustomRole"];
+          const modelMetadata = Prisma.dmmf.datamodel.models.find((m) => m.name === model);
+          const hasBusinessId = modelMetadata?.fields.some((f) => f.name === "businessId");
+          const hasIsArchived = modelMetadata?.fields.some((f) => f.name === "isArchived");
 
-          if (tenantModels.includes(model)) {
-            // Используем Record<string, unknown> вместо any для линтера
-            const extendedArgs = args as Record<string, unknown>;
+          const extendedArgs = args as Record<string, unknown>;
 
-            // Операции чтения/правки, поддерживающие фильтр 'where'
-            const whereOperations = [
-              "findFirst",
-              "findFirstOrThrow",
-              "findMany",
-              "update",
-              "updateMany",
-              "upsert",
-              "delete",
-              "deleteMany",
-              "count",
-              "aggregate",
-            ];
+          // 1. Обработка фильтрации (Чтение, Обновление, Удаление)
+          const whereOps = [
+            "findFirst",
+            "findFirstOrThrow",
+            "findMany",
+            "update",
+            "updateMany",
+            "upsert",
+            "delete",
+            "deleteMany",
+            "count",
+            "aggregate",
+          ];
 
-            if (whereOperations.includes(operation)) {
-              extendedArgs.where = {
-                ...((extendedArgs.where as Record<string, unknown>) || {}),
-                businessId,
-              };
-            }
+          if (whereOps.includes(operation)) {
+            extendedArgs.where = {
+              ...((extendedArgs.where as Record<string, unknown>) || {}),
+            };
 
-            // Операция создания: инъекция businessId в данные
-            if (operation === "create") {
-              extendedArgs.data = {
-                ...((extendedArgs.data as Record<string, unknown>) || {}),
-                businessId,
-              };
-            }
-
-            if (operation === "createMany") {
-              const data = extendedArgs.data;
-              if (Array.isArray(data)) {
-                extendedArgs.data = data.map((item) => ({
-                  ...(item as Record<string, unknown>),
-                  businessId,
-                }));
+            // Принудительная изоляция по бизнесу
+            if (hasBusinessId) {
+              if (!businessId) {
+                throw new Error("UNAUTHORIZED: Business ID is required for isolation-enabled models");
               }
+              // [FIX]: Добавляем само условие фильтрации (его не было в твоем наброске)
+              (extendedArgs.where as Record<string, unknown>).businessId = businessId;
             }
 
-            return query(extendedArgs);
+            // Автоматический Soft Delete
+            if (hasIsArchived) {
+              (extendedArgs.where as Record<string, unknown>).isArchived = false;
+            }
           }
 
-          return query(args);
+          // 2. Обработка создания (Одиночное)
+          if (operation === "create" && hasBusinessId) {
+            extendedArgs.data = {
+              ...((extendedArgs.data as Record<string, unknown>) || {}),
+              businessId,
+            };
+          }
+
+          // 3. Обработка создания (Множественное)
+          if (operation === "createMany" && hasBusinessId) {
+            const data = extendedArgs.data;
+            if (Array.isArray(data)) {
+              extendedArgs.data = data.map((item: unknown) => ({
+                ...(item as Record<string, unknown>),
+                businessId,
+              }));
+            }
+          }
+
+          return query(extendedArgs);
         },
       },
     },

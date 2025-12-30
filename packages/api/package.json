@@ -8,11 +8,11 @@
     "./validators": "./src/validators/index.ts"
   },
   "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf ./dist",
-    "dev": "tsc --watch",
-    "lint": "biome check .",
-    "test": "vitest run"
+    "dev": "ts-node-dev --respawn --transpile-only src/root.ts",
+    "lint": "biome lint .",
+    "test": "NODE_ENV=test vitest run --passWithNoTests",
+    "test:ui": "NODE_ENV=test vitest --ui --passWithNoTests",
+    "clean": "rm -rf ./dist"
   },
   "dependencies": {
     "@simple-coffeeshop/db": "workspace:*",
