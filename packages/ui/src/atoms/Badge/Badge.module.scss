@@ -1,0 +1,43 @@
+.badge {
+  // Базовые переменные (Default: Info)
+  --badge-color: #{$color-accent-blue};
+  --badge-bg-opacity: 0.1;
+  --badge-glow: 0px;
+
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  font-family: $font-mono;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  // Применение переменных
+  color: var(--badge-color);
+  background: rgba(var(--badge-color), var(--badge-bg-opacity)); // Требует RGB формата в идеале, но для SCSS переменных используем интерполяцию
+  border: 1px solid rgba(var(--badge-color), 0.2);
+  box-shadow: 0 0 var(--badge-glow) rgba(var(--badge-color), 0.15);
+
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  // Варианты просто переопределяют значения переменных
+  &.success {
+    --badge-color: #{$color-status-success};
+    --badge-glow: 10px;
+  }
+
+  &.warning {
+    --badge-color: #{$color-status-warning};
+  }
+
+  &.error {
+    --badge-color: #{$color-status-error};
+  }
+
+  &.neutral {
+    --badge-color: #{$color-text-muted};
+  }
+}
