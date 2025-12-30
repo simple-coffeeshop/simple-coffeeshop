@@ -1,0 +1,49 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  --input-border-color: #{rgba($color-accent-blue, 0.15)};
+  --input-icon-color: #{$color-text-muted};
+
+  &:focus-within {
+    --input-border-color: #{$color-accent-blue};
+    --input-icon-color: #{$color-accent-blue};
+  }
+}
+
+.icon {
+  position: absolute;
+  left: 16px;
+  color: var(--input-icon-color);
+  pointer-events: none;
+  transition: color $transition-fast, transform $transition-fast;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  background: rgba($color-accent-blue, 0.03);
+  border: 1px solid var(--input-border-color);
+  border-radius: $radius-md;
+  color: $color-text-primary;
+  font-family: $font-sans;
+  font-size: 14px;
+  outline: none;
+  transition: all $transition-main;
+
+  &.hasIcon {
+    padding-left: 48px;
+  }
+
+  &:focus {
+    background: rgba($color-accent-blue, 0.08);
+    box-shadow: 0 0 20px rgba($color-accent-blue, 0.1);
+  }
+
+  &.error {
+    --input-border-color: #{$color-status-error};
+    background: rgba($color-status-error, 0.05);
+  }
+}
