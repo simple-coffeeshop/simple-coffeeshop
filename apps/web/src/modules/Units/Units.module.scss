@@ -1,0 +1,96 @@
+@use "../../shared/styles/variables" as *;
+@use "../../shared/styles/mixins" as *;
+
+.unitsPage {
+  width: 100%;
+}
+
+.actionBar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.searchWrapper {
+  flex: 1;
+  .searchInput {
+    width: 100%;
+    height: 48px;
+    padding: 0 20px;
+    background: rgba($color-accent-blue, 0.05);
+    border: 1px solid rgba($color-accent-blue, 0.15);
+    border-radius: $radius-md;
+    color: $color-text-primary;
+    outline: none;
+    transition: all 0.3s ease;
+
+    &:focus { border-color: $color-accent-blue; }
+  }
+}
+
+.addButton {
+  height: 48px;
+  padding: 0 24px;
+  background: $color-accent-blue;
+  border: none;
+  border-radius: $radius-md;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.unitsGrid {
+  @include bento-grid-adaptive; // Используем наш миксин с minmax(350px)
+}
+
+.unitCard {
+  @include glass-panel;
+  @include glass-panel-hover;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    h3 { margin: 0; font-size: 1.1rem; }
+    .business { font-size: 0.8rem; color: $color-text-muted; }
+  }
+
+  .statusDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    &.online { background: $color-accent-blue; box-shadow: 0 0 10px $color-accent-blue; }
+    &.offline { background: $color-text-muted; }
+  }
+
+  .location {
+    font-size: 0.9rem;
+    color: $color-text-secondary;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    
+    .actionBtn {
+      flex: 1;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba($color-accent-blue, 0.2);
+      border-radius: $radius-sm;
+      color: $color-text-secondary;
+      font-size: 0.8rem;
+      cursor: pointer;
+      &:hover { border-color: $color-accent-blue; color: $color-text-primary; }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+.bentoGrid {
+  @include bento-grid-adaptive;
+  overflow: hidden
+}
+
+.statCard {
+  @include glass-panel;
+  padding: 24px;
+  min-width: 300px;
+
+  // [EVA_FIX]: Виджет теперь занимает все доступные колонки (100% ширины)
+  // Это работает и для 3-х колонок на десктопе, и для 2-х на планшете.
+  &.large {
+    grid-column: 1 / -1; 
+    min-height: 400px; // Немного увеличим высоту для солидности на широком экране
+  }
+
+  @include respond-to("mobile") {
+    padding: 16px;
+    
+    &.large {
+      min-height: 300px; // На мобилках чуть компактнее
+    }
+  }
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-bg-main; // OLED Black
+}
+
+.main {
+  width: 100%;
+  max-width: 600px;
+  padding: $layout-padding;
+}
+
+.glassCard {
+  @include glass-panel; // Наш синий стеклянный эффект
+  padding: 40px;
+  text-align: center;
+
+  @include glass-panel-hover;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  color: $color-text-primary;
+}
+
+.description {
+  color: $color-text-secondary;
+  font-size: 1.1rem;
+  margin-bottom: 24px;
+}
+
+.accent {
+  color: $color-accent-blue;
+  font-weight: 600;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba($color-accent-blue, 0.1);
+  border: 1px solid rgba($color-accent-blue, 0.2);
+  border-radius: $radius-full;
+  color: $color-accent-blue;
+  font-size: 0.9rem;
+  font-family: $font-mono;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: $color-accent-blue;
+  border-radius: 50%;
+  box-shadow: 0 0 10px $color-accent-blue;
+}

@@ -1,0 +1,143 @@
+@use "../styles/variables" as *;
+@use "../styles/mixins" as *;
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  min-width: $layout-min-width;
+  background-color: $color-bg-main;
+  position: relative;
+  overflow-x: hidden;
+
+  @include respond-to("tablet") {
+    min-width: 100% !important;
+  }
+}
+
+.backgroundGlow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba($color-accent-blue, 0.33) 0%, transparent 70%);
+  filter: blur(80px);
+  border-radius: 50%;
+  animation: moveBlob 25s infinite alternate ease-in-out;
+
+  &:nth-child(1) {
+    top: -10%;
+    right: -10%;
+  }
+
+  &:nth-child(2) {
+    bottom: -10%;
+    left: -5%;
+    background: radial-gradient(circle, rgba($color-accent-blue, 0.12) 0%, transparent 70%);
+  }
+}
+
+@keyframes moveBlob {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(120px, 60px) scale(1.1);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  width: 100%;
+  flex-wrap: nowrap;
+  gap: 20px;
+}
+
+.pageTitle {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  color: $color-text-primary;
+}
+
+.userBadge {
+  all: unset;
+  position: relative;
+  z-index: 1200;
+  height: 48px;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+
+  // [EVA_FIX]: Теперь миксин сам добавит синий оттенок в простое
+  @include glass-panel;
+
+  cursor: pointer;
+  font-family: $font-mono;
+  color: $color-accent-blue;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba($color-accent-blue, 0.15);
+    border-color: $color-accent-blue;
+    box-shadow: 0 0 20px rgba($color-accent-blue, 0.3);
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 24px 30px 24px 80px;
+  margin-left: $sidebar-collapsed-visible + 24px;
+  transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Сдвиг работает только на десктопе
+  @media (min-width: 1100px) {
+    &.shifted {
+      margin-left: $sidebar-width + 48px;
+    }
+  }
+
+  @include respond-to("tablet") {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-left: 80px !important;
+  }
+}
+
+.overlay {
+  display: none;
+
+  @include respond-to("tablet") {
+    &.active {
+      display: block;
+    }
+
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+  }
+}
+
+.container {
+  width: 100%;
+}

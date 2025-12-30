@@ -1,0 +1,19 @@
+.chartContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartTitle {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  color: $color-text-primary;
+  font-weight: 600;
+}
+
+.responsiveWrapper {
+  flex: 1;
+  min-height: 200px; // Важно для Recharts, чтобы он не "схлопнулся"
+  width: 100%;
+}

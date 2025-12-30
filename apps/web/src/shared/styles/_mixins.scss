@@ -1,0 +1,72 @@
+@use 'variables' as *;
+
+// Основной эффект стеклянной панели (OLED Blue Style)
+@mixin glass-panel {
+  //  background: $color-bg-panel;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  // [EVA_FIX]: Делаем бордер синим и видимым изначально
+  border: 1px solid rgba($color-accent-blue, 0.2);
+  border-radius: $radius-md;
+
+  // Добавляем легкий синий градиент для "стеклянного" объема
+
+  transition: all 0.3s ease;
+  background-image: linear-gradient(135deg, rgba($color-accent-blue, 0.05) 0%, transparent 100%);
+}
+
+// Эффект при наведении (чуть ярче границы)
+@mixin glass-panel-hover {
+  &:hover {
+    background: $color-bg-panel-hover;
+    border-color: rgba(100, 150, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 100, 255, 0.05); // Очень слабое синее свечение
+  }
+}
+
+// Миксин для активного элемента (например, в меню)
+@mixin glass-panel-active {
+  background: linear-gradient(to right, $color-border-accent, transparent);
+  border-left: 2px solid $color-accent-blue;
+  color: $color-text-primary;
+}
+
+// Утилита для Flex-центрирования
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin respond-to($breakpoint) {
+  @if $breakpoint =="mobile" {
+    @media (max-width: #{$breakpoint-mobile}) {
+      @content;
+    }
+  }
+
+  @else if $breakpoint =="tablet" {
+
+    // [FIX]: Теперь планшетный режим включается строго до 1024px
+    @media (max-width: #{$breakpoint-tablet - 1px}) {
+      @content;
+    }
+  }
+}
+
+// Миксин для адаптивной сетки Bento
+@mixin bento-grid-adaptive {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(3, 1fr); // Desktop
+
+  @include respond-to("tablet") {
+    // Фиксируем 2 колонки с минимальным порогом в 350px
+    grid-template-columns: repeat(2, minmax(350px, 1fr));
+  }
+
+  @include respond-to("mobile") {
+    grid-template-columns: 1fr;
+  }
+}
