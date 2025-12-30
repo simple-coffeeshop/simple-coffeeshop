@@ -1,0 +1,83 @@
+.button {
+  --btn-bg: transparent;
+  --btn-color: #{$color-text-primary};
+  --btn-border: transparent;
+  --btn-glow: 0 0 0 transparent;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: $radius-sm;
+  font-family: $font-sans;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all $transition-fast;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  box-shadow: var(--btn-glow);
+  position: relative;
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+  }
+
+  &.primary {
+    --btn-bg: #{$color-accent-blue};
+    --btn-color: #{$color-bg-main};
+    --btn-glow: 0 0 15px #{rgba($color-accent-blue, 0.3)};
+
+    &:hover:not(:disabled) {
+      --btn-glow: 0 0 25px #{rgba($color-accent-blue, 0.5)};
+      filter: brightness(1.1);
+    }
+  }
+
+  &.secondary {
+    @include glass-panel;
+    --btn-border: #{rgba($color-accent-blue, 0.2)};
+
+    &:hover:not(:disabled) {
+      background: rgba($color-accent-blue, 0.05);
+      border-color: $color-accent-blue;
+      box-shadow: 0 0 15px rgba($color-accent-blue, 0.1);
+    }
+  }
+
+  &.sm {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  &.md {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  &.lg {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
+}
+
+.loader {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
