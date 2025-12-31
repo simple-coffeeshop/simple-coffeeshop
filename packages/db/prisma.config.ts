@@ -1,13 +1,17 @@
 // packages/db/prisma.config.ts
 import path from "node:path";
+import { fileURLToPath } from "node:url"; // [NEW]
 import type { Prisma } from "@prisma/client";
 import dotenv from "dotenv";
 import { expand } from "dotenv-expand";
 import { defineConfig } from "prisma/config";
 
+// [FIX]: Эмуляция __dirname в ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const myEnv = dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 expand(myEnv);
-
 const isTest = process.env.NODE_ENV === "test";
 // Экспортируем строку подключения отдельно
 export const dbUrl = isTest ? process.env.TEST_DATABASE_URL : process.env.DATABASE_URL;

@@ -1,15 +1,17 @@
 // packages/api/src/root.ts
-import { authRouter } from "./routers/auth";
-import { networkRouter } from "./routers/network"; //
-import { router } from "./trpc";
+import { authRouter } from "./routers/auth.js";
+import { businessRouter } from "./routers/business.js";
+import { networkRouter } from "./routers/network.js";
+import { router } from "./trpc.js";
 
 /**
  * [EVAS_SYNC]: Корневой роутер приложения.
- * Теперь включает все базовые модули Спринта №1.
+ * Возвращаемся к стандартной плоской структуре.
  */
 export const appRouter = router({
   auth: authRouter,
-  network: networkRouter, //
+  network: networkRouter,
+  business: businessRouter, // Вот этого подключения не хватало!
 });
 
 export type AppRouter = typeof appRouter;

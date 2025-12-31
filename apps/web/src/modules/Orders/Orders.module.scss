@@ -1,0 +1,63 @@
+.ordersPage {
+  width: 100%;
+}
+
+.actionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+
+  @include respond-to("mobile") {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .sectionTitle {
+      font-size: 1.1rem;
+    }
+
+    .filters {
+      width: 100%;
+      overflow-x: auto; // Позволяем табам скроллиться, если их много
+    }
+  }
+}
+
+.tableContainer {
+  @include glass-panel;
+  overflow-x: auto; // Включаем скролл для всей таблицы
+  -webkit-overflow-scrolling: touch;
+
+  // Чтобы таблица не сжималась в кашу, задаем минимальную ширину
+  table {
+    min-width: 800px;
+  }
+}
+
+/* Специфичные стили для колонок */
+.colId {
+  width: 90px;
+  font-family: $font-mono;
+  color: $color-accent-emerald;
+}
+
+.colUnit {
+  width: 180px;
+  font-weight: 600;
+}
+
+.colTotal {
+  width: 110px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.colTime {
+  width: 120px;
+  color: $color-text-muted;
+}
+
+.colStatus {
+  width: 140px;
+}

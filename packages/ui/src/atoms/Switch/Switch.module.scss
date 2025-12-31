@@ -1,0 +1,81 @@
+@import "src/styles/variables";
+
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  font-family: $font-sans;
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: $color-text-secondary;
+}
+
+.switchContainer {
+  position: relative;
+  width: 44px;
+  height: 22px;
+}
+
+.hiddenInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: $color-bg-panel;
+  border: 1px solid $color-border-accent;
+  border-radius: $radius-full;
+  transition: $transition-main;
+  backdrop-filter: blur(4px);
+
+  &.checked {
+    background-color: rgba($color-accent-emerald, 0.1);
+    border-color: $color-accent-emerald;
+    box-shadow: 0 0 10px rgba($color-accent-emerald, 0.2);
+
+    .thumb {
+      transform: translateX(22px);
+      background-color: $color-accent-emerald;
+      box-shadow: 0 0 8px $color-accent-emerald;
+    }
+  }
+}
+
+.thumb {
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: $color-text-muted;
+  border-radius: 50%;
+  transition: $transition-main;
+}
+
+// Эффект фокуса для клавиатуры
+.hiddenInput:focus-visible+.slider {
+  outline: 2px solid $color-accent-emerald;
+  outline-offset: 2px;
+}
+
+.wrapper:hover .slider:not(.checked) {
+  border-color: rgba($color-accent-emerald, 0.4);
+  background-color: $color-bg-panel-hover;
+}

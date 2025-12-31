@@ -1,43 +1,92 @@
 .badge {
-  // Базовые переменные (Default: Info)
-  --badge-color: #{$color-accent-blue};
-  --badge-bg-opacity: 0.1;
-  --badge-glow: 0px;
-
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: $radius-full;
-  font-family: $font-mono;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: $radius-sm;
+  font-family: $font-sans;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-
-  // Применение переменных
-  color: var(--badge-color);
-  background: rgba(var(--badge-color), var(--badge-bg-opacity)); // Требует RGB формата в идеале, но для SCSS переменных используем интерполяцию
-  border: 1px solid rgba(var(--badge-color), 0.2);
-  box-shadow: 0 0 var(--badge-glow) rgba(var(--badge-color), 0.15);
-
-  transition: all $transition-fast;
   white-space: nowrap;
+  // Убедимся, что transition применяется ко всем изменяемым свойствам
+  transition: all $transition-fast;
+  border: 1px solid transparent;
+  // Базовая тень для объема, если нужно, но пока начнем без неё
+  // box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
-  // Варианты просто переопределяют значения переменных
+  // --- Варианты на основе Aurora Emerald Palette ---
+
   &.success {
-    --badge-color: #{$color-status-success};
-    --badge-glow: 10px;
+    background-color: rgba($color-status-success, 0.1);
+    color: $color-status-success;
+    border-color: rgba($color-status-success, 0.2);
+
+    &:hover {
+      background-color: rgba($color-status-success, 0.15);
+      border-color: rgba($color-status-success, 0.5);
+      box-shadow: 0 0 12px rgba($color-status-success, 0.3), 0 0 4px rgba($color-status-success, 0.4);
+    }
   }
 
   &.warning {
-    --badge-color: #{$color-status-warning};
+    background-color: rgba($color-status-warning, 0.1);
+    color: $color-status-warning;
+    border-color: rgba($color-status-warning, 0.2);
+
+    &:hover {
+      background-color: rgba($color-status-warning, 0.15);
+      border-color: rgba($color-status-warning, 0.5);
+      box-shadow: 0 0 12px rgba($color-status-warning, 0.3), 0 0 4px rgba($color-status-warning, 0.4);
+    }
   }
 
   &.error {
-    --badge-color: #{$color-status-error};
+    background-color: rgba($color-status-error, 0.1);
+    color: $color-status-error;
+    border-color: rgba($color-status-error, 0.2);
+
+    &:hover {
+      background-color: rgba($color-status-error, 0.15);
+      border-color: rgba($color-status-error, 0.5);
+      box-shadow: 0 0 12px rgba($color-status-error, 0.3), 0 0 4px rgba($color-status-error, 0.4);
+    }
+  }
+
+  &.info {
+    background-color: rgba($color-accent-teal, 0.1);
+    color: $color-accent-teal;
+    border-color: rgba($color-accent-teal, 0.2);
+
+    &:hover {
+      background-color: rgba($color-accent-teal, 0.15);
+      border-color: rgba($color-accent-teal, 0.5);
+      box-shadow: 0 0 12px rgba($color-accent-teal, 0.3), 0 0 4px rgba($color-accent-teal, 0.4);
+    }
   }
 
   &.neutral {
-    --badge-color: #{$color-text-muted};
+    background-color: $color-bg-panel;
+    color: $color-text-secondary;
+    border-color: $color-border-accent;
+
+    &:hover {
+      background-color: $color-bg-panel-hover;
+      color: $color-text-primary;
+      border-color: rgba($color-border-accent, 0.6);
+      // Нейтральный вариант светится слабее, основным зеленым тоном системы
+      box-shadow: 0 0 10px $color-border-glow;
+    }
   }
+}
+
+.sm {
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+.md {
+  padding: 4px 10px;
+  font-size: 11px;
 }

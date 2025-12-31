@@ -1,40 +1,39 @@
 // packages/db/scripts/bootstrap-root.ts
 import { PrismaClient } from "@prisma/client";
-import { nanoid } from "nanoid";
+import { hash } from "argon2";
 
 const prisma = new PrismaClient();
 
 async function bootstrap() {
   const email = process.argv[2];
+  const password = process.argv[3] || "admin123"; // Пароль можно передать вторым аргументом
 
   if (!email) {
-    console.error("Usage: pnpm bootstrap-root <email>");
+    console.error("Usage: pnpm bootstrap-root <email> [password]");
     process.exit(1);
   }
 
   try {
-    // 1. Создаем пользователя с ролью ROOT [cite: 2, 3]
+    console.log(`[BOOTSTRAP]: Creating ROOT user: ${email}...`);
+
+    // 1. Создаем пользователя с ролью ROOT и хешированным паролем
     const user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
-        platformRole: "ROOT", // Даем God-mode права [cite: 2]
-        is2FAEnabled: false, // Настраивается при первом входе
+        passwordHash: await hash(password), // Хешируем для Login/Password
+        platformRole: "ROOT", // God-mode права
+        is2FAEnabled: false,
       },
     });
-
-    // 2. Имитация токена для Magic Link
-    const inviteToken = nanoid(32);
 
     console.log("-----------------------------------------");
     console.log("✅ ROOT USER CREATED IN DB");
     console.log(`ID: ${user.id}`);
     console.log(`Email: ${user.email}`);
+    console.log(`Password: ${password} (change after first login)`);
     console.log(`Platform Role: ${user.platformRole}`);
     console.log("-----------------------------------------");
-    console.log("🚀 Ссылка для онбординга (пример):");
-    console.log(`http://localhost:3000/auth/invite?token=${inviteToken}&email=${user.email}`);
-    console.log("-----------------------------------------");
-    console.log("Теперь ты можешь войти и настроить 2FA.");
+    console.log("Теперь ты можешь войти в систему, используя эти данные.");
   } catch (error) {
     console.error("❌ Ошибка при создании ROOT:", error);
   } finally {

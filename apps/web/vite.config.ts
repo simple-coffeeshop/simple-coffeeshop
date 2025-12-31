@@ -15,10 +15,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         // [WARNING]: Используйте только для переменных и миксинов без вывода CSS-кода
-        additionalData: `
-          @use "@/shared/styles/variables" as *;
-          @use "@/shared/styles/mixins" as *;
-        `,
+        additionalData: `@use "@simple-coffeeshop/ui/styles" as *;`,
       },
     },
   },

@@ -1,0 +1,96 @@
+@use 'variables' as *;
+
+// [EVA_NOTE]: Импорт шрифтов Geist (предполагается наличие в проекте)
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-mono/400.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: $color-bg-main;
+  color: $color-text-primary;
+  font-family: $font-sans;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+
+  // [EVA_CREATIVE]: Фирменный эффект Aurora Emerald с референса
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      // Изумрудный засвет сверху справа
+      radial-gradient(circle at 80% 0%, rgba($color-accent-emerald, 0.12) 0%, transparent 45%),
+      // Тиловый засвет снизу слева
+      radial-gradient(circle at 20% 100%, rgba($color-accent-teal, 0.08) 0%, transparent 45%),
+      // Глубокое центральное заполнение
+      radial-gradient(circle at 50% 50%, #081214 0%, $color-bg-main 100%);
+    z-index: -2;
+  }
+
+  // Текстура шума для мягкости градиентов (убирает бандинг на IPS)
+  &::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: $color-text-primary;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
+}
+
+// Стилизация скроллбара под "стекло"
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: $radius-full;
+
+  &:hover {
+    background: rgba($color-accent-emerald, 0.2);
+  }
+}
+
+kbd {
+  font-family: $font-mono;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $color-accent-emerald;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}

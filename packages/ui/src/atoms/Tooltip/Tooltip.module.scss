@@ -1,0 +1,112 @@
+.container {
+  position: relative;
+  display: inline-flex; // Сохраняем, чтобы тултип позиционировался относительно этого блока
+  vertical-align: middle;
+  line-height: 0; // Убираем лишние отступы текстовой строки
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 3000;
+  padding: 8px 12px;
+  background: $color-bg-panel;
+  border: 1px solid rgba($color-accent-emerald, 0.2);
+  border-radius: $radius-md;
+  color: $color-text-primary;
+  font-size: 12px;
+  line-height: 1.4; // Возвращаем нормальную высоту строки для текста внутри
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out; // Позиционирование
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(-50%);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(-50%);
+    }
+  }
+
+  .top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+  }
+
+  &.bottom {
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &.left {
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &.right {
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+.arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+
+  .top & {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px 5px 0 5px;
+    border-color: $color-border-accent transparent transparent transparent;
+  }
+
+  .bottom & {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 5px 5px 5px;
+    border-color: transparent transparent $color-border-accent transparent;
+  }
+
+  .left & {
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 5px 0 5px 5px;
+    border-color: transparent transparent transparent $color-border-accent;
+  }
+
+  .right & {
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 5px 5px 5px 0;
+    border-color: transparent $color-border-accent transparent transparent;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translate(-50%, 5px);
+  }
+
+  // Упрощенно для примера
+  to {
+    opacity: 1;
+    transform: scale(1) translate(-50%, 0);
+  }
+}

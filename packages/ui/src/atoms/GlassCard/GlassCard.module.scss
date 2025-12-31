@@ -1,29 +1,39 @@
 .card {
-  --glass-blur: 24px;
-  --glass-opacity: 0.05;
-  --glass-border: #{rgba($color-accent-blue, 0.2)};
-
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  background: linear-gradient(135deg,
-      rgba($color-accent-blue, var(--glass-opacity)) 0%,
-      transparent 100%);
-  border: 1px solid var(--glass-border);
-  border-radius: $radius-md;
-  padding: $layout-padding;
+  @include glass-panel; // Используем обновленный миксин с Aurora-эффектом
   position: relative;
   overflow: hidden;
-  transition: all $transition-main;
-  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  padding: $card-padding;
 
-}
+  // [EVA_CREATIVE]: Дополнительный слой внутреннего свечения для объема
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.03),
+        transparent 40%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
 
-.interactive {
-  cursor: pointer;
-  @include glass-panel-hover; // Используем базовый миксин для консистентности
+  &.interactive {
+    cursor: pointer;
+    @include glass-panel-hover;
 
-  &:hover {
-    --glass-opacity: 0.08;
-    border-color: rgba($color-accent-blue, 0.4);
+    &:hover::after {
+      opacity: 1;
+    }
+
+    &:active {
+      transform: scale(0.985);
+    }
+  }
+
+  // Специфические стили для разных секций внутри карточки
+  :global(.card-header) {
+    margin-bottom: 24px;
   }
 }

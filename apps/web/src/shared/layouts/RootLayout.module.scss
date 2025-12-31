@@ -1,143 +1,199 @@
-@use "../styles/variables" as *;
-@use "../styles/mixins" as *;
+@use "@simple-coffeeshop/ui/styles" as *;
 
-.layout {
+.container {
   display: flex;
   min-height: 100vh;
-  min-width: $layout-min-width;
   background-color: $color-bg-main;
-  position: relative;
-  overflow-x: hidden;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: margin $transition-main;
+
+  // Отступ под сайдбар на десктопе
+  margin-left: $sidebar-width;
 
   @include respond-to("tablet") {
-    min-width: 100% !important;
+    margin-left: 0; // На планшетах и мобилках сайдбар скрыт
   }
 }
 
-.backgroundGlow {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.blob {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba($color-accent-blue, 0.33) 0%, transparent 70%);
-  filter: blur(80px);
-  border-radius: 50%;
-  animation: moveBlob 25s infinite alternate ease-in-out;
-
-  &:nth-child(1) {
-    top: -10%;
-    right: -10%;
-  }
-
-  &:nth-child(2) {
-    bottom: -10%;
-    left: -5%;
-    background: radial-gradient(circle, rgba($color-accent-blue, 0.12) 0%, transparent 70%);
-  }
-}
-
-@keyframes moveBlob {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  100% {
-    transform: translate(120px, 60px) scale(1.1);
-  }
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  width: 100%;
-  flex-wrap: nowrap;
-  gap: 20px;
-}
-
-.pageTitle {
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 1;
-  font-size: clamp(1.5rem, 5vw, 2.5rem);
-  color: $color-text-primary;
-}
-
-.userBadge {
-  all: unset;
-  position: relative;
-  z-index: 1200;
-  height: 48px;
-  min-width: 100px;
+// Левая часть первой строки
+.titleWrapper {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-
-  // [EVA_FIX]: Теперь миксин сам добавит синий оттенок в простое
-  @include glass-panel;
-
-  cursor: pointer;
-  font-family: $font-mono;
-  color: $color-accent-blue;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
+  gap: 12px;
+  height: 40px;
   flex-shrink: 0;
 
-  &:hover {
-    background: rgba($color-accent-blue, 0.15);
-    border-color: $color-accent-blue;
-    box-shadow: 0 0 20px rgba($color-accent-blue, 0.3);
+  // На планшетах этот элемент — прямой потомок флекса Navbar из-за display: contents у родителя
+  @include respond-to("tablet") {
+    order: 1;
+  }
+}
+
+// Контейнер-обертка для поиска и профиля
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-items: center;
+  flex: 1; // Занимает всё пространство
+  min-width: 0; // Позволяет внутренним элементам правильно сжиматься
+
+  @include respond-to("tablet") {
+    display: contents; // Продолжаем использовать эту магию
+  }
+}
+
+// Профиль и кнопка выхода (Правая часть первой строки)
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+
+  @include respond-to("tablet") {
+    order: 2; // Вторая позиция в первой строке (уйдет вправо)
+  }
+}
+
+// Строка поиска (Вторая строка целиком)
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: $radius-md;
+  padding: 0 12px;
+  height: 42px; // Делаем поиск чуть крупнее для мобилок
+
+  // Десктопные параметры
+  flex: 0 1 500px; // Базово 500px, но может сжиматься
+  margin: 0 auto; // [ВАЖНО] Центрирует поиск между Dashboard и Eva
+  transition: all $transition-main;
+  min-width: 160px;
+
+  &:focus-within {
+    border-color: rgba($color-accent-emerald, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  @include respond-to("tablet") {
+    order: 3; // Самый большой порядок — поиск падает в самый низ
+    flex: 0 0 100%; // Занимает ровно 100% ширины строки
+    margin: 4px 0 8px 0; // Отступы: сверху от Дашборда, снизу от контента
+    max-width: none;
+  }
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: $color-text-primary;
+  font-size: 14px;
+  outline: none;
+  flex: 1;
+  margin-left: 8px;
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}
+
+.mobileMenuBtn {
+  display: none;
+
+  @include respond-to("tablet") {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: $color-text-primary;
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-sm;
+    cursor: pointer;
+
+    &:active {
+      background: rgba($color-accent-emerald, 0.1);
+    }
+  }
+}
+
+.suBadge {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba($color-accent-emerald, 0.1);
+  border: 1px solid rgba($color-accent-emerald, 0.2);
+  border-radius: 8px;
+  white-space: nowrap;
+
+  .suPrefix {
+    font-weight: 800;
+    color: $color-accent-emerald;
+    font-size: 11px;
+  }
+
+  .suDivider {
+    width: 1px;
+    height: 12px;
+    background: rgba($color-accent-emerald, 0.3);
+    margin: 0 8px;
+  }
+
+  .suName {
+    font-size: 13px;
+    color: $color-text-primary;
+  }
+
+  @media (max-width: 600px) {
+    .suName {
+      display: none;
+    }
+
+    padding: 0 8px;
   }
 }
 
 .content {
-  position: relative;
-  z-index: 1;
+  padding: 32px;
   flex: 1;
-  padding: 24px 30px 24px 80px;
-  margin-left: $sidebar-collapsed-visible + 24px;
-  transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-  // Сдвиг работает только на десктопе
-  @media (min-width: 1100px) {
-    &.shifted {
-      margin-left: $sidebar-width + 48px;
-    }
-  }
-
-  @include respond-to("tablet") {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding-left: 80px !important;
-  }
-}
-
-.overlay {
-  display: none;
-
-  @include respond-to("tablet") {
-    &.active {
-      display: block;
-    }
-
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    z-index: 1000;
-  }
-}
-
-.container {
   width: 100%;
+  box-sizing: border-box;
+
+  @include respond-to("mobile") {
+    padding: 16px;
+  }
+}
+
+.hotkeyHint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.6;
+
+  .kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: $font-mono;
+  }
+
+  @include respond-to("tablet") {
+    display: none;
+  }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }

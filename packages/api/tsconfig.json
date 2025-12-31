@@ -2,7 +2,8 @@
   "extends": "../config/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": ".", // [FIX]: точка, а не ./src
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "tests"] // [FIX]: добавить tests
 }

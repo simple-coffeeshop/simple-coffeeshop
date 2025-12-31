@@ -1,3 +1,5 @@
+import { Badge, Button, GlassCard, Tooltip } from "@simple-coffeeshop/ui";
+import { Activity, Coffee, FileText, MapPin, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import styles from "./Units.module.scss";
 
@@ -11,7 +13,13 @@ interface Unit {
 
 const UnitsModule = () => {
   const [units] = useState<Unit[]>([
-    { id: "u1", name: "Central Point", businessName: "Coffee Mania", location: "Downtown, Ave 5", status: "online" },
+    {
+      id: "u1",
+      name: "Central Point Coffee Station",
+      businessName: "Coffee Mania",
+      location: "Downtown, Ave 5",
+      status: "online",
+    },
     {
       id: "u2",
       name: "Skyline Corner",
@@ -24,41 +32,49 @@ const UnitsModule = () => {
 
   return (
     <div className={styles.unitsPage}>
-      <div className={styles.actionBar}>
-        <div className={styles.searchWrapper}>
-          <input type="text" placeholder="Search units..." className={styles.searchInput} />
-        </div>
-        <button type="button" className={styles.addButton}>
-          <span className={styles.plus}>+</span> Register Unit
-        </button>
-      </div>
-
       <div className={styles.unitsGrid}>
         {units.map((unit) => (
-          <div key={unit.id} className={styles.unitCard}>
+          <GlassCard key={unit.id} className={styles.unitCard}>
             <div className={styles.cardHeader}>
               <div className={styles.info}>
-                <h3>{unit.name}</h3>
+                <div className={styles.nameRow}>
+                  <Coffee size={18} className={styles.typeIcon} />
+                  <h3>{unit.name}</h3>
+                </div>
                 <span className={styles.business}>{unit.businessName}</span>
               </div>
-              <div className={`${styles.statusDot} ${styles[unit.status]}`} />
+              <Badge variant={unit.status === "online" ? "success" : "neutral"}>{unit.status}</Badge>
             </div>
 
             <div className={styles.location}>
-              <span className={styles.icon}>📍</span>
-              {unit.location}
+              <MapPin size={14} />
+              <span>{unit.location}</span>
             </div>
 
             <div className={styles.actions}>
-              <button type="button" className={styles.actionBtn}>
+              <Button variant="secondary" size="sm" icon={Activity} className={styles.flexBtn}>
                 Monitor
-              </button>
-              <button type="button" className={styles.actionBtn}>
-                Settings
-              </button>
+              </Button>
+              <Tooltip content="Настройки кофейной станции">
+                <Button variant="secondary" size="sm" icon={Settings} className={styles.flexBtn}>
+                  Settings
+                </Button>
+              </Tooltip>
             </div>
-          </div>
+          </GlassCard>
         ))}
+      </div>
+
+      <div className={styles.floatingActions}>
+        <div className={styles.actionsContainer}>
+          <Button variant="primary" size="md" icon={Plus}>
+            Register Unit
+          </Button>
+          <div className={styles.actionDivider} />
+          <Button variant="secondary" size="md" icon={FileText}>
+            View Drafts
+          </Button>
+        </div>
       </div>
     </div>
   );

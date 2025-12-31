@@ -1,46 +1,45 @@
 // packages/api/src/trpc.ts
-
-import type { PlatformRole } from "@simple-coffeeshop/db"; // [FIX]: Импорт типа
-import { createIsolatedClient, prisma } from "@simple-coffeeshop/db";
+import { createIsolatedClient, type PlatformRole, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError, z } from "zod";
+import { ZodError } from "zod";
 
 /**
- * [NEW]: Внутренний контекст для тестов и внутренних вызовов
+ * [EVA_FIX]: Внутренний контекст для тестов (без Request)
  */
 export const createInnerTRPCContext = (opts: {
-  userId: string | null;
-  businessId: string | null;
-  platformRole: PlatformRole;
-  is2FAVerified: boolean;
+  userId?: string | null;
+  businessId?: string | null;
+  platformRole?: PlatformRole;
+  is2FAVerified?: boolean;
 }) => {
-  const db = createIsolatedClient(opts.businessId, opts.platformRole);
+  const { businessId, platformRole, userId, is2FAVerified } = opts;
+  const db = businessId ? createIsolatedClient(businessId) : null;
+
   return {
     prisma,
     db,
-    ...opts,
+    userId: userId ?? null,
+    businessId: businessId ?? null,
+    platformRole: platformRole ?? ("NONE" as PlatformRole),
+    is2FAVerified: is2FAVerified ?? false,
   };
 };
 
+/**
+ * Основной контекст для API запросов
+ */
 export const createTRPCContext = async (opts: { req: Request }) => {
   const userId = opts.req.headers.get("x-user-id");
   const businessId = opts.req.headers.get("x-business-id");
-
-  const user = userId
-    ? await prisma.user.findUnique({
-        where: { id: userId },
-        select: { platformRole: true, is2FAEnabled: true },
-      })
-    : null;
-
-  const platformRole = user?.platformRole ?? "NONE";
+  const platformRole = (opts.req.headers.get("x-platform-role") || "NONE") as PlatformRole;
+  const is2FAVerified = opts.req.headers.get("x-2fa-verified") === "true";
 
   return createInnerTRPCContext({
     userId,
     businessId,
     platformRole,
-    is2FAVerified: !user?.is2FAEnabled,
+    is2FAVerified,
   });
 };
 
@@ -51,30 +50,43 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError: error.cause instanceof ZodError ? z.formatError(error.cause) : null,
+        zodError:
+          error.cause instanceof ZodError
+            ? error.cause.issues // Передаем сырой массив ZodIssue
+            : null,
       },
     };
   },
 });
 
+/**
+ * Middlewares
+ */
+const isAuthed = t.middleware(({ next, ctx }) => {
+  if (!ctx.userId) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "User not identified" });
+  }
+  if (!ctx.businessId || !ctx.db) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Business context missing" });
+  }
+  return next({
+    ctx: {
+      userId: ctx.userId,
+      businessId: ctx.businessId,
+      db: ctx.db,
+    },
+  });
+});
+
+const isAdmin = t.middleware(({ next, ctx }) => {
+  if (ctx.platformRole !== "ROOT" && ctx.platformRole !== "CO_SU") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Admin privileges required" });
+  }
+  return next({ ctx });
+});
+
 export const router = t.router;
 export const publicProcedure = t.procedure;
-
-export const rootProcedure = t.procedure.use(({ ctx, next }) => {
-  if (ctx.platformRole !== "ROOT") {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуются права ROOT" });
-  }
-  return next({ ctx });
-});
-
-export const adminProcedure = t.procedure.use(({ ctx, next }) => {
-  if (ctx.platformRole === "NONE") {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Доступ только админам платформы" });
-  }
-  return next({ ctx });
-});
-
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-  return next({ ctx: { userId: ctx.userId, db: ctx.db } });
-});
+export const protectedProcedure = t.procedure.use(isAuthed);
+export const adminProcedure = t.procedure.use(isAdmin);
+export { TRPCError };

@@ -8,6 +8,8 @@ ignoredBuiltDependencies:
 
 onlyBuiltDependencies:
   - '@prisma/engines'
+  - argon2
+  - less
   - prisma
   - sharp
   - simple-git-hooks

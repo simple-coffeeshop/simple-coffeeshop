@@ -1,0 +1,76 @@
+@use 'variables' as *;
+
+// [EVA_UPDATED]: Эффект глубокого стекла (Aurora Style)
+@mixin glass-panel {
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+
+  // Тонкая граница с легким свечением сверху (как на референсе)
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: $radius-md;
+  background: $color-bg-panel;
+
+  // Мягкий внутренний градиент для объема
+  background-image: radial-gradient(circle at top left,
+      rgba($color-accent-emerald, 0.05) 0%,
+      transparent 70%);
+
+  transition: all $transition-fast;
+}
+
+// [EVA_NEW]: Свечение для активных элементов (Sidebar/Tabs)
+@mixin emerald-glow {
+  background: rgba($color-accent-emerald, 0.1);
+  border: 1px solid rgba($color-accent-emerald, 0.3);
+  box-shadow:
+    0 0 20px rgba($color-accent-emerald, 0.1),
+    inset 0 0 12px rgba($color-accent-emerald, 0.05);
+  color: $color-text-primary;
+}
+
+@mixin glass-panel-hover {
+  &:hover {
+    background: $color-bg-panel-hover;
+    border-color: rgba($color-accent-emerald, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin respond-to($breakpoint) {
+  @if $breakpoint =="tablet" {
+    @media (max-width: #{$breakpoint-tablet - 1px}) {
+      @content;
+    }
+  }
+
+  @else if $breakpoint =="tablet" {
+    @media (max-width: #{$breakpoint-tablet - 1px}) {
+      @content;
+    }
+  }
+}
+
+@mixin bento-grid-adaptive {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+
+  @include respond-to("tablet") {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  @include respond-to("mobile") {
+    grid-template-columns: 1fr; // Строго одна колонка
+    gap: 16px;
+  }
+}

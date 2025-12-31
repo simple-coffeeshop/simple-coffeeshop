@@ -1,10 +1,22 @@
 {
-  "extends": "../config/base.json",
+  "extends": "../../packages/config/base.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src/**/*", "src/env.d.ts"], // [EVA_FIX]: Теперь TS видит всё
   "exclude": ["node_modules"]
 }

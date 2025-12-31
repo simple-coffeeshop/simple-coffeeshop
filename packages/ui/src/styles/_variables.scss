@@ -1,0 +1,51 @@
+// ==== AURORA EMERALD PALETTE (System Core) ====
+
+// Backgrounds (Глубокие темные тона с зеленым подтоном)
+$color-bg-main: #05080a;
+$color-bg-panel: rgba(10, 18, 21, 0.6);
+$color-bg-panel-hover: rgba(16, 28, 32, 0.8);
+
+// Borders & Glows (Тонкие стеклянные границы)
+$color-border-glow: rgba(16, 185, 129, 0.05);
+$color-border-accent: rgba(16, 185, 129, 0.2);
+
+// Text (Высокая контрастность для OLED/IPS)
+$color-text-primary: #e2e8f0;
+$color-text-secondary: rgba(226, 232, 240, 0.7);
+$color-text-muted: rgba(100, 116, 139, 0.6);
+
+// Accents (Aurora Colors из референса)
+$color-accent-emerald: #10b981; // Основной изумрудный (Dashboard, Success)
+$color-accent-teal: #0d9488; // Дополнительный тиловый
+$color-accent-amber: #f59e0b; // Оранжевый акцент (Orders, Warning)
+$color-accent-red: #ef4444; // Красный акцент (Labor Cost, Error)
+
+// Алиасы для обратной совместимости компонентов
+$color-accent-blue: $color-accent-emerald;
+$color-status-success: $color-accent-emerald;
+$color-status-warning: $color-accent-amber;
+$color-status-error: $color-accent-red;
+
+// Typography (Geist Family)
+$font-sans: 'Geist Sans', system-ui, -apple-system, sans-serif;
+$font-mono: 'Geist Mono', monospace;
+
+// Dimensions & Radius
+$radius-sm: 8px;
+$radius-md: 12px; // Уменьшил радиус для более "строгого" вида как на скрине
+$radius-lg: 20px;
+$radius-full: 9999px;
+
+$layout-padding: 32px;
+$sidebar-width: 260px;
+$sidebar-collapsed-visible: 12px;
+
+// Animation
+$transition-main: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: 0.2s ease;
+
+$breakpoint-mobile: 481px;
+$breakpoint-tablet: 867px; // Должна быть здесь
+$breakpoint-desktop: 1026px;
+
+$card-padding: 10px;

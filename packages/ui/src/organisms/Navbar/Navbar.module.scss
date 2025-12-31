@@ -1,0 +1,45 @@
+.navbar {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap; // Разрешаем перенос элементов на вторую строку
+  align-items: center; // Центрируем элементы первой строки по вертикали
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba($color-bg-panel, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba($color-accent-emerald, 0.1);
+  box-sizing: border-box;
+  z-index: 100;
+  min-height: 64px;
+  gap: 24px;
+
+  @include respond-to("tablet") {
+    padding: 12px 16px;
+    height: auto; // Позволяем навбару расти в высоту при переносе строки
+    gap: 8px 0; // Вертикальный зазор между строками
+  }
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto; // Не даем заголовку сжиматься
+  height: 40px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1; // Занимает всё свободное место на десктопе
+  height: 40px;
+
+  @include respond-to("tablet") {
+    /* [EVA MAGIC]: display: contents делает так, что дочерние элементы 
+      (searchBar и userSection из RootLayout) ведут себя так, 
+      будто они лежат прямо в .navbar. 
+      Это позволит нам раскидать их по разным строкам через order.
+    */
+    display: contents;
+  }
+}

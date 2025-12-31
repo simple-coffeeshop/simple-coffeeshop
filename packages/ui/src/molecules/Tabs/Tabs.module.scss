@@ -1,0 +1,63 @@
+.tabsContainer {
+  display: inline-flex;
+  align-items: center;
+  background-color: $color-bg-panel;
+  border: 1px solid $color-border-accent;
+  padding: 4px;
+  border-radius: $radius-md;
+  backdrop-filter: blur(10px);
+  gap: 4px;
+}
+
+.tab {
+  position: relative;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-family: $font-sans;
+  font-size: 14px;
+  font-weight: 500;
+  color: $color-text-secondary;
+  cursor: pointer;
+  border-radius: $radius-sm;
+  transition: $transition-fast;
+  outline: none;
+
+  &:hover:not(.active) {
+    color: $color-text-primary;
+    background-color: rgba($color-accent-emerald, 0.05);
+  }
+
+  &.active {
+    color: $color-accent-emerald;
+  }
+
+  // Фокус для клавиатуры
+  &:focus-visible {
+    box-shadow: 0 0 0 2px rgba($color-accent-emerald, 0.3);
+  }
+}
+
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background-color: $color-accent-emerald;
+  border-radius: $radius-full;
+  box-shadow: 0 0 8px rgba($color-accent-emerald, 0.6);
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.5);
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
