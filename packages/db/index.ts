@@ -1,37 +1,11 @@
 // packages/db/index.ts
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import pkg from "@prisma/client";
+import pkg from "@prisma/client"; // [EVA_FIX]: Нативный ESM-импорт CJS пакета
 import pg from "pg";
-import { dbUrl } from "./env.js"; // [EVA_FIX]: Обязательно env.js для изоляции от devDeps
+import { dbUrl } from "./env.js";
 
 const { PrismaClient, Prisma } = pkg;
-
-/**
- * [EVA_NO_ANY]: Строгие интерфейсы для метаданных Prisma DMMF.
- * Это убирает все ошибки Biome (noExplicitAny).
- */
-interface DmmfField {
-  readonly name: string;
-}
-
-interface DmmfModel {
-  readonly name: string;
-  readonly fields: readonly DmmfField[];
-}
-
-interface PrismaGlobal {
-  readonly dmmf: {
-    readonly datamodel: {
-      readonly models: readonly DmmfModel[];
-    };
-  };
-}
-
-interface PrismaArguments {
-  where?: Record<string, unknown>;
-  data?: unknown;
-}
 
 const pool = new pg.Pool({ connectionString: dbUrl });
 const adapter = new PrismaPg(pool);
@@ -42,10 +16,36 @@ export const prisma = new PrismaClient({
 });
 
 /**
- * [EVA_STRATEGY]: Изолированный клиент (Multitenancy + Soft Delete).
+ * [EVA_FIX]: Полное избавление от 'any'. Используем unknown + строгие интерфейсы.
+ */
+interface DmmfField {
+  name: string;
+}
+
+interface DmmfModel {
+  name: string;
+  fields: DmmfField[];
+}
+
+interface PrismaDmmf {
+  datamodel: {
+    models: DmmfModel[];
+  };
+}
+
+interface PrismaGlobal {
+  dmmf: PrismaDmmf;
+}
+
+interface PrismaArguments {
+  where?: Record<string, unknown>;
+  data?: unknown;
+}
+
+/**
+ * Изолированный клиент (Multitenancy + Soft Delete).
  */
 export const createIsolatedClient = (businessId: string | null, platformRole: string = "NONE") => {
-  // ROOT и CO_SU видят всё
   if (platformRole === "ROOT" || platformRole === "CO_SU") {
     return prisma;
   }
@@ -54,6 +54,7 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
+          // Безопасное приведение через unknown для доступа к внутренним метаданным Prisma
           const dmmf = (Prisma as unknown as PrismaGlobal).dmmf;
           const modelMetadata = dmmf.datamodel.models.find((m) => m.name === model);
 
@@ -61,6 +62,7 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
           const hasIsArchived = modelMetadata?.fields.some((f) => f.name === "isArchived") ?? false;
 
           const extendedArgs = args as PrismaArguments;
+
           const whereOps = [
             "findFirst",
             "findFirstOrThrow",
@@ -79,7 +81,8 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
 
             if (hasBusinessId) {
               if (!businessId) {
-                throw new Error("UNAUTHORIZED: Business ID is required for isolation-enabled models");
+                // [EVA_FIX]: Запоминаем эту строку для теста!
+                throw new Error("UNAUTHORIZED: Business ID required for isolation-enabled models");
               }
               extendedArgs.where.businessId = businessId;
             }
@@ -94,10 +97,10 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
               const currentData = (extendedArgs.data || {}) as Record<string, unknown>;
               extendedArgs.data = { ...currentData, businessId };
             } else if (Array.isArray(extendedArgs.data)) {
-              extendedArgs.data = extendedArgs.data.map((item: unknown) => ({
-                ...(item as Record<string, unknown>),
-                businessId,
-              }));
+              extendedArgs.data = extendedArgs.data.map((item: unknown) => {
+                const record = item as Record<string, unknown>;
+                return { ...record, businessId };
+              });
             }
           }
 
@@ -108,17 +111,5 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
   });
 };
 
-/**
- * [EVA_FIX]: Экспорт ЗНАЧЕНИЙ (Value Space) для рантайма ESM.
- * Это решает SyntaxError: 'does not provide an export named X'.
- */
-export const { PlatformRole, HandshakeStatus, UserRole, Capability, AssetStatus } = pkg;
-
-/**
- * [EVA_FIX]: Используем 'export type *' для проброса типов моделей (User, Business и т.д.)
- * и типов Enums. Это НЕ создает коллизий с константами выше.
- * МЫ УБРАЛИ ручной экспорт типов 'export type { PlatformRole ... }', так как
- * он вызывал TS2323 при наличии 'export type *'.
- */
-export type * from "@prisma/client";
 export { Prisma };
+export type { PrismaClient as PrismaClientType } from "@prisma/client";
