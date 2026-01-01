@@ -71,11 +71,12 @@ describe("Real DB Isolation Test", () => {
   });
 
   it("Запрет на доступ к данным без businessId для обычного юзера", async () => {
-    // Теперь создание клиента не должно выбрасывать ошибку сразу
     const clientEmpty = createIsolatedClient(null, "NONE");
 
-    // Ошибка должна возникнуть именно при попытке запроса к изолированной модели
-    await expect(clientEmpty.unit.findMany()).rejects.toThrow("UNAUTHORIZED: Business ID is required");
+    // [EVA_FIX]: Строка должна быть в точности как в index.ts
+    await expect(clientEmpty.unit.findMany()).rejects.toThrow(
+      "UNAUTHORIZED: Business ID is required for isolation-enabled models",
+    );
   });
 
   it("should automatically filter out archived records (Soft Delete)", async () => {
