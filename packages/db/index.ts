@@ -1,5 +1,4 @@
 // packages/db/index.ts
-
 import { PrismaPg } from "@prisma/adapter-pg";
 import pkg from "@prisma/client"; // [EVA_FIX]: Нативный ESM-импорт CJS пакета
 import pg from "pg";
@@ -16,27 +15,21 @@ export const prisma = new PrismaClient({
 });
 
 /**
- * [EVA_FIX]: Полное избавление от 'any'. Используем unknown + строгие интерфейсы.
+ * [EVA_NO_ANY]: Строгие интерфейсы для DMMF.
  */
 interface DmmfField {
   name: string;
 }
-
 interface DmmfModel {
   name: string;
   fields: DmmfField[];
 }
-
 interface PrismaDmmf {
-  datamodel: {
-    models: DmmfModel[];
-  };
+  datamodel: { models: DmmfModel[] };
 }
-
 interface PrismaGlobal {
   dmmf: PrismaDmmf;
 }
-
 interface PrismaArguments {
   where?: Record<string, unknown>;
   data?: unknown;
@@ -54,7 +47,6 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Безопасное приведение через unknown для доступа к внутренним метаданным Prisma
           const dmmf = (Prisma as unknown as PrismaGlobal).dmmf;
           const modelMetadata = dmmf.datamodel.models.find((m) => m.name === model);
 
@@ -62,7 +54,6 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
           const hasIsArchived = modelMetadata?.fields.some((f) => f.name === "isArchived") ?? false;
 
           const extendedArgs = args as PrismaArguments;
-
           const whereOps = [
             "findFirst",
             "findFirstOrThrow",
@@ -78,18 +69,14 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
 
           if (whereOps.includes(operation)) {
             extendedArgs.where = { ...(extendedArgs.where || {}) };
-
             if (hasBusinessId) {
               if (!businessId) {
-                // [EVA_FIX]: Запоминаем эту строку для теста!
-                throw new Error("UNAUTHORIZED: Business ID required for isolation-enabled models");
+                // [EVA_FIX]: Добавляем "is" для грамматики и соответствия тестам
+                throw new Error("UNAUTHORIZED: Business ID is required for isolation-enabled models");
               }
               extendedArgs.where.businessId = businessId;
             }
-
-            if (hasIsArchived) {
-              extendedArgs.where.isArchived = false;
-            }
+            if (hasIsArchived) extendedArgs.where.isArchived = false;
           }
 
           if ((operation === "create" || operation === "createMany") && hasBusinessId) {
@@ -103,7 +90,6 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
               });
             }
           }
-
           return query(extendedArgs);
         },
       },
@@ -111,5 +97,21 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
   });
 };
 
+/**
+ * [EVA_FIX]: Явный экспорт енумов как значений.
+ * Это решит TS2305 в рантайме и при сборке.
+ */
+export const { PlatformRole, UserRole, HandshakeStatus, AssetStatus, Capability } = pkg;
+
+/**
+ * [EVA_FIX]: Экспорт типов отдельно.
+ * Нужно для корректной работы 'import type' в trpc.ts.
+ */
+export type {
+  HandshakeStatus as HandshakeStatusType,
+  PlatformRole as PlatformRoleType,
+  PrismaClient as PrismaClientType,
+  UserRole as UserRoleType,
+} from "@prisma/client";
+
 export { Prisma };
-export type { PrismaClient as PrismaClientType } from "@prisma/client";
