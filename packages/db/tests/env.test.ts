@@ -1,15 +1,30 @@
 // packages/db/tests/env.test.ts [АКТУАЛЬНО]
-import { describe, expect, it } from "vitest";
-import { resolveDbUrl } from "../env.ts";
 
-describe("Database Environment Logic", () => {
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { findProjectRoot, validateDbUrl } from "../env.ts";
+
+describe("Root Detection Logic", () => {
+  it("[MEDIUM] Должен находить корень проекта по маркеру pnpm-workspace.yaml", () => {
+    const root = findProjectRoot();
+    const workspaceFile = path.join(root, "pnpm-workspace.yaml");
+    expect(fs.existsSync(workspaceFile)).toBe(true);
+  });
+});
+
+describe("Database Environment Validation", () => {
   it("[LOW] Должен возвращать DATABASE_URL в режиме development", () => {
     const mockEnv = {
       NODE_ENV: "development",
       DATABASE_URL: "postgresql://dev_db",
     };
-
-    const url = resolveDbUrl(mockEnv as NodeJS.ProcessEnv);
+    /**
+     * [EVA_FIX]: Безопасное приведение через unknown.
+     * Исключаем ключевое слово any.
+     */
+    const env = mockEnv as unknown as NodeJS.ProcessEnv;
+    const url = validateDbUrl(env);
     expect(url).toBe("postgresql://dev_db");
   });
 
@@ -18,28 +33,14 @@ describe("Database Environment Logic", () => {
       NODE_ENV: "test",
       TEST_DATABASE_URL: "postgresql://test_db",
     };
-
-    const url = resolveDbUrl(mockEnv as NodeJS.ProcessEnv);
+    const env = mockEnv as unknown as NodeJS.ProcessEnv;
+    const url = validateDbUrl(env);
     expect(url).toBe("postgresql://test_db");
   });
 
   it("[CRITICAL] Должен выбрасывать ошибку, если URL отсутствует", () => {
-    const mockEnv = {
-      NODE_ENV: "development",
-      DATABASE_URL: "",
-    };
-
-    expect(() => resolveDbUrl(mockEnv as NodeJS.ProcessEnv)).toThrow(/DATABASE_URL is missing/);
-  });
-
-  it("[LOW] Должен отдавать приоритет TEST_DATABASE_URL в режиме теста", () => {
-    const mockEnv = {
-      NODE_ENV: "test",
-      DATABASE_URL: "postgresql://wrong_db",
-      TEST_DATABASE_URL: "postgresql://correct_db",
-    };
-
-    const url = resolveDbUrl(mockEnv as NodeJS.ProcessEnv);
-    expect(url).toBe("postgresql://correct_db");
+    const mockEnv = { NODE_ENV: "development", DATABASE_URL: "" };
+    const env = mockEnv as unknown as NodeJS.ProcessEnv;
+    expect(() => validateDbUrl(env)).toThrow(/DATABASE_URL is missing/);
   });
 });

@@ -1,52 +1,49 @@
+// packages/db/scripts/bootstrap-root.ts [АКТУАЛЬНО]
 import * as argon2 from "argon2";
+import { getAdminConfig } from "../env.js";
+import type { PlatformRoleType } from "../index.js";
 
-async function main() {
-  console.log("🌑 [EVA]: Запуск через системный конфиг...");
-
-  /**
-   * 1. Импортируем конфиг, чтобы загрузить переменные окружения.
-   */
-  const { dbUrl } = await import("../prisma.config.js");
-
-  if (!dbUrl || dbUrl.includes("${")) {
-    throw new Error(`[BOOTSTRAP]: Ошибка интерполяции. URL не готов: ${dbUrl}`);
-  }
-
-  /**
-   * 2. Впрыскиваем URL в окружение.
-   */
-  process.env.DATABASE_URL = dbUrl;
-
-  const debugUrl = dbUrl.replace(/:.*@/, ":****@");
-  console.log(`✅ URL успешно подготовлен: ${debugUrl}`);
-
-  /**
-   * 3. Импортируем УЖЕ настроенный prisma клиент из твоего index.ts.
-   * Он уже содержит внутри PrismaPg адаптер и правильные логи.
-   */
-  const { prisma } = await import("../index.js");
+async function main(): Promise<void> {
+  console.log("🌑 [EVA]: Запуск инициализации ROOT-пользователя...");
 
   try {
-    const email = "admin@aurora.com";
-    const password = "admin-password-123";
-    const passwordHash = await argon2.hash(password);
+    const { email, password } = getAdminConfig();
+    const { prisma } = await import("../index.js");
 
-    console.log("🚀 Синхронизация пользователя ROOT...");
+    const passwordHash = await argon2.hash(password);
+    const role: PlatformRoleType = "ROOT";
+
+    console.log(`🚀 Синхронизация администратора: ${email}`);
 
     const user = await prisma.user.upsert({
-      where: { email },
-      update: { passwordHash, platformRole: "ROOT" },
-      create: { email, passwordHash, platformRole: "ROOT" },
+      where: { email: email.toLowerCase() },
+      update: {
+        passwordHash,
+        platformRole: role,
+      },
+      create: {
+        email: email.toLowerCase(),
+        passwordHash,
+        platformRole: role,
+      },
     });
 
     console.log("---");
-    console.log(`✨ УСПЕХ: Пользователь ${user.email} создан/обновлен.`);
+    console.log(`✨ УСПЕХ: Пользователь ${user.email} готов к работе.`);
     console.log("---");
-  } catch (err) {
-    console.error("❌ Ошибка базы данных:", err);
-  } finally {
-    await prisma.$disconnect();
+  } catch (err: unknown) {
+    /**
+     * [EVA_FIX]: Строгая типизация ошибки через unknown.
+     * Никаких 'any'.
+     */
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error("❌ Ошибка:", errorMessage);
+    process.exit(1);
   }
 }
 
-main().catch(console.error);
+main().catch((err: unknown) => {
+  const errorMessage = err instanceof Error ? err.message : String(err);
+  console.error("💀 Критический сбой:", errorMessage);
+  process.exit(1);
+});
