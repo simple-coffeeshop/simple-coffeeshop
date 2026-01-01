@@ -1,10 +1,17 @@
+// packages/api/tsconfig.json [АКТУАЛЬНО]
 {
   "extends": "../config/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src", // [FIX]: точка, а не ./src
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.tsbuildinfo",
+    "baseUrl": ".",
+    "paths": {
+      "@simple-coffeeshop/db": ["../db/index.ts"]
+    },
     "types": ["node"]
   },
-  "include": ["src"], // [FIX]: добавить tests
-  "exclude": ["tests"] // Явно запрещаем трогать тесты при билде
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"],
+  "references": [{ "path": "../db" }]
 }
