@@ -12,39 +12,43 @@ const BusinessModule = () => {
   return (
     <div className={styles.businessesPage}>
       <div className={styles.businessGrid}>
-        {(businesses ?? []).map((biz) => (
-          <GlassCard key={biz.id} className={styles.businessCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.info}>
-                <div className={styles.titleRow}>
-                  <Building2 size={20} />
-                  <h3>{biz.name}</h3>
-                </div>
-                <span className={styles.owner}>
-                  <User size={14} /> {biz.owner?.email ?? "Pending Owner"}
-                </span>
-              </div>
-              <Badge variant={biz.isArchived ? "neutral" : "success"}>{biz.isArchived ? "archived" : "active"}</Badge>
-            </div>
-
-            <div className={styles.cardStats}>
-              <div className={styles.statItem}>
-                <span className={styles.label}>Active Units</span>
-                <div className={styles.valueRow}>
-                  <LayoutGrid size={16} />
-                  <span className={styles.value}>
-                    {/* @ts-ignore: _count инжектится Prisma */}
-                    {biz._count?.units ?? 0}
+        {(businesses ?? []).map(
+          (
+            biz, // Тип теперь выводится из tRPC!
+          ) => (
+            <GlassCard key={biz.id} className={styles.businessCard}>
+              <div className={styles.cardHeader}>
+                <div className={styles.info}>
+                  <div className={styles.titleRow}>
+                    <Building2 size={20} />
+                    <h3>{biz.name}</h3>
+                  </div>
+                  <span className={styles.owner}>
+                    <User size={14} /> {biz.owner?.email ?? "Pending Owner"}
                   </span>
                 </div>
+                <Badge variant={biz.isArchived ? "neutral" : "success"}>{biz.isArchived ? "archived" : "active"}</Badge>
               </div>
-            </div>
 
-            <Button variant="secondary" size="md" className={styles.detailsBtn}>
-              View Details
-            </Button>
-          </GlassCard>
-        ))}
+              <div className={styles.cardStats}>
+                <div className={styles.statItem}>
+                  <span className={styles.label}>Active Units</span>
+                  <div className={styles.valueRow}>
+                    <LayoutGrid size={16} />
+                    <span className={styles.value}>
+                      {/* @ts-ignore: _count инжектится Prisma */}
+                      {biz._count?.units ?? 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button variant="secondary" size="md" className={styles.detailsBtn}>
+                View Details
+              </Button>
+            </GlassCard>
+          ),
+        )}
       </div>
 
       <div className={styles.floatingActions}>
