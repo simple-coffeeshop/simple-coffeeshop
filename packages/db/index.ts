@@ -106,11 +106,15 @@ export const createIsolatedClient = (businessId: string | null, platformRole: st
  * Теперь они доступны и как рантайм-значения, и как типы.
  */
 export const { PlatformRole, UserRole, HandshakeStatus, AssetStatus, Capability } = pkg;
+
 export type {
+  Business,
+  Handshake,
   HandshakeStatus as HandshakeStatusType,
   PlatformRole as PlatformRoleType,
+  Unit,
+  User,
   UserRole as UserRoleType,
 } from "@prisma/client";
 
 export { Prisma };
-export type { PrismaClient as PrismaClientType } from "@prisma/client";
