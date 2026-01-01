@@ -5,6 +5,6 @@
     "rootDir": ".",
     "types": ["node"]
   },
-  "include": ["index.ts", "prisma.config.ts"],
+  "include": ["index.ts", "prisma.config.ts", "env.ts"],
   "exclude": ["tests"]
 }

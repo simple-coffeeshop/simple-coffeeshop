@@ -38,43 +38,39 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PKG_NAME: "@simple-coffeeshop/api"
     container_name: sc-app-api
     restart: always
-    command: pnpm --filter @simple-coffeeshop/api start
+    # [EVA_FIX]: Команда 'start' в api/package.json — это 'node dist/index.js'
+    # Используем pnpm start без фильтров, так как мы уже в папке пакета
+    command: pnpm start
     environment: &app-env
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-prod:5432/${POSTGRES_DB:-simple_coffeeshop}?schema=public
-      - REDIS_URL=redis://sc-redis-prod:6379
     depends_on:
-      db-prod:
-        condition: service_healthy
-      redis-prod:
-        condition: service_started
+      db-prod: { condition: service_healthy }
     ports:
-      - "3001:3000" # API на порту 3001
-    logging: *default-logging
-    networks:
-      - sc-network
+      - "3001:3000"
+    networks: [sc-network]
 
-  # --- ОПРЕДЕЛЯЕМ WEB СЕРВИС ---
   app-web:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PKG_NAME: "@simple-coffeeshop/web"
     container_name: sc-app-web
     restart: always
-    command: pnpm --filter @simple-coffeeshop/web start
+    # [EVA_FIX]: Убедись, что в apps/web/package.json есть скрипт "start" 
+    # (например: "start": "vite preview --port 3000 --host")
+    command: pnpm start
     environment: *app-env
     depends_on:
-      db-prod:
-        condition: service_healthy
-      redis-prod:
-        condition: service_started
+      db-prod: { condition: service_healthy }
     ports:
-      - "3000:3000" # Web на порту 3000
-    logging: *default-logging
-    networks:
-      - sc-network
+      - "3000:3000"
+    networks: [sc-network]
 
 networks:
   sc-network:
