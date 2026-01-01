@@ -5,7 +5,9 @@
     "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@simple-coffeeshop/db": ["../../packages/db/index.ts"],
+      "@simple-coffeeshop/api": ["../../packages/api/src/index.ts"]
     },
     "types": ["vite/client"],
     "noEmit": true,
