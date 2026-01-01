@@ -4,7 +4,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# [EVA_PATCH]: Добавляем tini для корректной обработки сигналов завершения
+# Системные зависимости для рантайма и билда
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
   tini \
@@ -17,10 +17,9 @@ WORKDIR /app
 FROM base AS build-stage
 ENV CI=true
 
+# Зависимости для компиляции нативных модулей (argon2 и т.д.)
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  openssl \
-  libssl-dev \
   python3 \
   make \
   g++ \
@@ -31,49 +30,39 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/api/package.json ./packages/api/
 COPY apps/web/package.json ./apps/web/
 
+# Устанавливаем все зависимости
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY . .
 
+# Генерация Prisma Client и билд проекта
 ENV NODE_ENV=production
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
-# [EVA_PATCH]: Добавляем очистку кэша Prisma после билда
 RUN pnpm --filter @simple-coffeeshop/db generate && \
-  pnpm build && \
-  pnpm prune --prod --ignore-scripts && \
-  rm -rf node_modules/.cache && \
-  rm -rf packages/db/node_modules/.cache
+  pnpm build
 
-# --- Этап 3: Финальный образ (Runner) ---
-# [EVA_FIX]: Наследуемся от нашего этапа 'base', а не от чистого образа.
-# Теперь tini, который мы поставили в начале, будет доступен здесь.
+# --- Этап 3: Изоляция пакета (Deploy) ---
+# [EVA_FIX]: Используем pnpm deploy для создания автономной папки приложения
+FROM build-stage AS isolate
+RUN pnpm --filter @simple-coffeeshop/api --prod deploy /app/deployed
+
+# --- Этап 4: Финальный образ (Runner) ---
 FROM base AS runner
-
-# Точка входа теперь сработает, так как tini есть в образе base
-ENTRYPOINT ["/usr/bin/tini", "--"]
-
 WORKDIR /app
 
-# Нам всё еще нужен openssl для работы Prisma в рантайме.
-# В base он уже есть, но если хочешь быть уверенным — можно оставить.
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  openssl \
-  && rm -rf /var/lib/apt/lists/*
+# Копируем только изолированное приложение
+COPY --from=isolate /app/deployed ./
+
+# Prisma Client генерируется в node_modules пакета db. 
+# pnpm deploy должен был забрать его, но если ты используешь кастомный output в schema.prisma, 
+# убедись, что он попадает в /app/deployed/node_modules.
 
 ENV NODE_ENV=production
-
-# Копируем результаты сборки с правильными правами
-COPY --from=build-stage --chown=node:node /app/node_modules ./node_modules
-COPY --from=build-stage --chown=node:node /app/packages ./packages
-COPY --from=build-stage --chown=node:node /app/apps ./apps
-COPY --from=build-stage --chown=node:node /app/package.json ./package.json
-
-# Переключаемся на пользователя node (безопасность!)
 USER node
 
 EXPOSE 3000
 
-# pnpm уже настроен в этапе base, так что команда сработает
-CMD ["pnpm", "start"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+# Запускаем напрямую через node, чтобы избежать лишних слоев pnpm/turbo в рантайме
+CMD ["node", "dist/index.js"]
