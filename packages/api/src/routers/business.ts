@@ -1,6 +1,6 @@
 // packages/api/src/routers/business.ts
 import { z } from "zod";
-import { protectedProcedure, router, TRPCError } from "../trpc";
+import { protectedProcedure, router, TRPCError } from "../trpc.js";
 
 export const businessRouter = router({
   /**

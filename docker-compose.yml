@@ -1,37 +1,43 @@
-# docker-compose.yml
 services:
-  db:
+  db-dev:
     image: postgres:18-alpine
-    container_name: simple-coffeeshop-db
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_DB_DEV},${POSTGRES_DB_TEST}
-      TZ: UTC
+    container_name: sc-db-dev
     ports:
-      - "5432:5432" # Оставлено по запросу
-    healthcheck:
-      # Исправлено: добавлена проверка через конкретную базу данных (DEV)
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB_DEV:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - "5432:5432" # Открыто наружу для тебя
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB_DEV:-simple_coffeeshop_dev}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - sc-dev-data:/var/lib/postgresql/data
+    networks:
+      - sc-dev-network
 
   adminer:
     image: adminer
-    container_name: simple-coffeeshop-adminer
-    restart: always
+    container_name: sc-adminer
     ports:
       - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+    networks:
+      - sc-dev-network
+
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile # Или отдельный Dockerfile.dev
+    volumes:
+      - .:/app # [КРИТИЧНО]: Синхронизация кода
+      - /app/node_modules # Чтобы не затереть модули внутри контейнера
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+      - "5173:5173" # Порт для Vite
+    networks:
+      - sc-dev-network
+
+networks:
+  sc-dev-network:
 
 volumes:
-  # Добавлено: именованный том для удобства управления
-  postgres_data:
-    name: simple-coffeeshop-postgres-data
+  sc-dev-data:

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
     "lint": "biome lint .",
     "test": "NODE_ENV=test vitest run --passWithNoTests",
     "test:ui": "NODE_ENV=test vitest --ui --passWithNoTests",
@@ -19,6 +20,7 @@
     "@simple-coffeeshop/db": "workspace:*",
     "@trpc/server": "^11.8.1",
     "argon2": "^0.44.0",
+    "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
     "pino": "^10.1.0",
     "superjson": "^2.2.6",

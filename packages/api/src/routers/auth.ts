@@ -2,7 +2,7 @@
 import { verify } from "argon2";
 import jwt from "jsonwebtoken"; // [EVA_FIX]: Импортируем как default для совместимости с ESM
 import { z } from "zod";
-import { publicProcedure, router, TRPCError } from "../trpc";
+import { publicProcedure, router, TRPCError } from "../trpc.js";
 
 export const authRouter = router({
   login: publicProcedure

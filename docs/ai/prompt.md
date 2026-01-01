@@ -57,3 +57,10 @@
 - **Caching:** Инвалидация кеша для tRPC эндпоинтов.
 - **Clean Code:** TSDoc обязателен. "Boy Scout Rule".
 - **Architecture:** Предложение ADR в `docs/adr/`.
+
+## 6. Правки
+* **Auth**: Вход по `email/password` (argon2). Сессии через `JWT`.
+* **Multitenancy**: Изоляция на уровне Prisma через `createIsolatedClient(businessId)`.
+* **Roles**: `ROOT` (системный админ), `CO_SU` (админ компании), `NONE` (обычный юзер).
+* **Soft Delete**: Все запросы через изолированный клиент автоматически фильтруют `isArchived: false`.
+

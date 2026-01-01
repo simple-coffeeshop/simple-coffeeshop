@@ -15,6 +15,7 @@
     "web": "pnpm --filter @simple-coffeeshop/web",
     "ui": "pnpm --filter @simple-coffeeshop/ui",
     "dev": "turbo run dev",
+    "start": "turbo run start",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "NODE_ENV=test turbo run test",

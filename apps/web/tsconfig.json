@@ -2,13 +2,16 @@
   "extends": "../../packages/config/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
       "@/*": ["./src/*"]
     },
     "types": ["vite/client"],
-    "noEmit": true
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "composite": false
   },
   "include": ["src", "vite.config.ts", "src/**/*.ts", "src/**/*.tsx", "./src/auto-imports.d.ts"],
   "exclude": ["node_modules"]

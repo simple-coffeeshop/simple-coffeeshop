@@ -3,7 +3,7 @@
 import { HandshakeStatus } from "@simple-coffeeshop/db"; // [FIX]: Убрали Capability
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { adminProcedure, protectedProcedure, router } from "../trpc";
+import { adminProcedure, protectedProcedure, router } from "../trpc.js";
 
 export const networkRouter = router({
   /**

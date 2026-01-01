@@ -1,44 +1,52 @@
-// packages/db/scripts/bootstrap-root.ts
-import { PrismaClient } from "@prisma/client";
-import { hash } from "argon2";
+import * as argon2 from "argon2";
 
-const prisma = new PrismaClient();
+async function main() {
+  console.log("🌑 [EVA]: Запуск через системный конфиг...");
 
-async function bootstrap() {
-  const email = process.argv[2];
-  const password = process.argv[3] || "admin123"; // Пароль можно передать вторым аргументом
+  /**
+   * 1. Импортируем конфиг, чтобы загрузить переменные окружения.
+   */
+  const { dbUrl } = await import("../prisma.config.js");
 
-  if (!email) {
-    console.error("Usage: pnpm bootstrap-root <email> [password]");
-    process.exit(1);
+  if (!dbUrl || dbUrl.includes("${")) {
+    throw new Error(`[BOOTSTRAP]: Ошибка интерполяции. URL не готов: ${dbUrl}`);
   }
 
-  try {
-    console.log(`[BOOTSTRAP]: Creating ROOT user: ${email}...`);
+  /**
+   * 2. Впрыскиваем URL в окружение.
+   */
+  process.env.DATABASE_URL = dbUrl;
 
-    // 1. Создаем пользователя с ролью ROOT и хешированным паролем
-    const user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase().trim(),
-        passwordHash: await hash(password), // Хешируем для Login/Password
-        platformRole: "ROOT", // God-mode права
-        is2FAEnabled: false,
-      },
+  const debugUrl = dbUrl.replace(/:.*@/, ":****@");
+  console.log(`✅ URL успешно подготовлен: ${debugUrl}`);
+
+  /**
+   * 3. Импортируем УЖЕ настроенный prisma клиент из твоего index.ts.
+   * Он уже содержит внутри PrismaPg адаптер и правильные логи.
+   */
+  const { prisma } = await import("../index.js");
+
+  try {
+    const email = "admin@aurora.com";
+    const password = "admin-password-123";
+    const passwordHash = await argon2.hash(password);
+
+    console.log("🚀 Синхронизация пользователя ROOT...");
+
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { passwordHash, platformRole: "ROOT" },
+      create: { email, passwordHash, platformRole: "ROOT" },
     });
 
-    console.log("-----------------------------------------");
-    console.log("✅ ROOT USER CREATED IN DB");
-    console.log(`ID: ${user.id}`);
-    console.log(`Email: ${user.email}`);
-    console.log(`Password: ${password} (change after first login)`);
-    console.log(`Platform Role: ${user.platformRole}`);
-    console.log("-----------------------------------------");
-    console.log("Теперь ты можешь войти в систему, используя эти данные.");
-  } catch (error) {
-    console.error("❌ Ошибка при создании ROOT:", error);
+    console.log("---");
+    console.log(`✨ УСПЕХ: Пользователь ${user.email} создан/обновлен.`);
+    console.log("---");
+  } catch (err) {
+    console.error("❌ Ошибка базы данных:", err);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-bootstrap();
+main().catch(console.error);

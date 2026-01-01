@@ -2,8 +2,9 @@
   "extends": "../config/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": ".", // [FIX]: точка, а не ./src
+    "rootDir": "./src", // [FIX]: точка, а не ./src
     "types": ["node"]
   },
-  "include": ["src", "tests"] // [FIX]: добавить tests
+  "include": ["src"], // [FIX]: добавить tests
+  "exclude": ["tests"] // Явно запрещаем трогать тесты при билде
 }

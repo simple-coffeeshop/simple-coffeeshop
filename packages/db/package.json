@@ -3,17 +3,31 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
+    "build": "tsc",
     "generate": "prisma generate",
-    "push": "prisma db push && prisma generate",
-    "test:push": "NODE_ENV=test prisma db push && NODE_ENV=test prisma generate",
-    "lint": "biome lint .",
+
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:bootstrap": "tsx scripts/bootstrap-root.ts",
+
+    "db:push:test": "NODE_ENV=test prisma db push",
+    "db:studio:test": "NODE_ENV=test prisma studio",
+
+    "db:push:prod": "NODE_ENV=production prisma db push",
+    "db:bootstrap:prod": "NODE_ENV=production tsx scripts/bootstrap-root.ts",
+
     "test": "vitest run --passWithNoTests",
-    "test:ui": "vitest --ui --passWithNoTests",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "lint": "biome check --write .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",

@@ -1,0 +1,85 @@
+services:
+  db-prod:
+    image: postgres:18-alpine
+    container_name: sc-db-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-simple_coffeeshop}
+    volumes:
+      - sc-prod-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-simple_coffeeshop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: &default-logging
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - sc-network
+
+  redis-prod:
+    image: redis:8-alpine
+    container_name: sc-redis-prod
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - sc-redis-data:/data
+    logging: *default-logging
+    networks:
+      - sc-network
+
+  # --- ОПРЕДЕЛЯЕМ API СЕРВИС ---
+  app-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sc-app-api
+    restart: always
+    command: pnpm --filter @simple-coffeeshop/api start
+    environment: &app-env
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-prod:5432/${POSTGRES_DB:-simple_coffeeshop}?schema=public
+      - REDIS_URL=redis://sc-redis-prod:6379
+    depends_on:
+      db-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_started
+    ports:
+      - "3001:3000" # API на порту 3001
+    logging: *default-logging
+    networks:
+      - sc-network
+
+  # --- ОПРЕДЕЛЯЕМ WEB СЕРВИС ---
+  app-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sc-app-web
+    restart: always
+    command: pnpm --filter @simple-coffeeshop/web start
+    environment: *app-env
+    depends_on:
+      db-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_started
+    ports:
+      - "3000:3000" # Web на порту 3000
+    logging: *default-logging
+    networks:
+      - sc-network
+
+networks:
+  sc-network:
+    driver: bridge
+
+volumes:
+  sc-prod-data:
+  sc-redis-data:
