@@ -43,26 +43,23 @@ RUN pnpm --filter @simple-coffeeshop/db generate && \
   pnpm build
 
 # --- Этап 3: Изоляция пакета (Deploy) ---
-# [EVA_FIX]: Используем pnpm deploy для создания автономной папки приложения
+# [EVA_FIX]: В pnpm v10 флаг --legacy необходим для деплоя без принудительного 'injected' режима
 FROM build-stage AS isolate
-RUN pnpm --filter @simple-coffeeshop/api --prod deploy /app/deployed
+RUN pnpm --filter @simple-coffeeshop/api --prod --legacy deploy /app/deployed
 
 # --- Этап 4: Финальный образ (Runner) ---
 FROM base AS runner
 WORKDIR /app
 
-# Копируем только изолированное приложение
+# Копируем результат деплоя
 COPY --from=isolate /app/deployed ./
 
-# Prisma Client генерируется в node_modules пакета db. 
-# pnpm deploy должен был забрать его, но если ты используешь кастомный output в schema.prisma, 
-# убедись, что он попадает в /app/deployed/node_modules.
-
+# [EVA_CHECK]: Prisma Client. 
+# pnpm deploy копирует физические файлы, поэтому симлинки на .prisma превратятся в реальные папки.
 ENV NODE_ENV=production
 USER node
 
 EXPOSE 3000
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-# Запускаем напрямую через node, чтобы избежать лишних слоев pnpm/turbo в рантайме
 CMD ["node", "dist/index.js"]
