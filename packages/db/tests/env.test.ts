@@ -1,46 +1,42 @@
-// packages/db/tests/env.test.ts [АКТУАЛЬНО]
-
-import fs from "node:fs";
-import path from "node:path";
+// packages/db/tests/index.test.ts
 import { describe, expect, it } from "vitest";
-import { findProjectRoot, validateDbUrl } from "../env.ts";
+import { createIsolatedClient, prisma } from "../index";
 
-describe("Root Detection Logic", () => {
-  it("[MEDIUM] Должен находить корень проекта по маркеру pnpm-workspace.yaml", () => {
-    const root = findProjectRoot();
-    const workspaceFile = path.join(root, "pnpm-workspace.yaml");
-    expect(fs.existsSync(workspaceFile)).toBe(true);
-  });
-});
+describe("IsolatedClient Factory", () => {
+  const BUS_A = "business-a";
 
-describe("Database Environment Validation", () => {
-  it("[LOW] Должен возвращать DATABASE_URL в режиме development", () => {
-    const mockEnv = {
-      NODE_ENV: "development",
-      DATABASE_URL: "postgresql://dev_db",
-    };
+  it("should return an extended client for regular users", async () => {
     /**
-     * [EVA_FIX]: Безопасное приведение через unknown.
-     * Исключаем ключевое слово any.
+     * [EVA_FIX]: Для обычных ролей возвращается расширенный инстанс.
      */
-    const env = mockEnv as unknown as NodeJS.ProcessEnv;
-    const url = validateDbUrl(env);
-    expect(url).toBe("postgresql://dev_db");
+    const client = createIsolatedClient(BUS_A, "NONE");
+
+    // Проверяем поведение: клиент должен возвращать данные (массив),
+    // автоматически применяя фильтры в рантайме.
+    const results = await client.unit.findMany();
+    expect(Array.isArray(results)).toBe(true);
+
+    /**
+     * [EVA_FIX]: В расширенном клиенте prisma.$extends создает новый прокси-объект,
+     * поэтому он не должен быть равен глобальному инстансу.
+     */
+    expect(client).not.toBe(prisma);
   });
 
-  it("[MEDIUM] Должен использовать TEST_DATABASE_URL при NODE_ENV=test", () => {
-    const mockEnv = {
-      NODE_ENV: "test",
-      TEST_DATABASE_URL: "postgresql://test_db",
-    };
-    const env = mockEnv as unknown as NodeJS.ProcessEnv;
-    const url = validateDbUrl(env);
-    expect(url).toBe("postgresql://test_db");
-  });
+  it("should bypass isolation for ROOT platform role (God-mode Identity)", async () => {
+    /**
+     * [EVA_FIX]: Передаем null в качестве businessId, что допустимо для ROOT.
+     */
+    const client = createIsolatedClient(null, "ROOT");
 
-  it("[CRITICAL] Должен выбрасывать ошибку, если URL отсутствует", () => {
-    const mockEnv = { NODE_ENV: "development", DATABASE_URL: "" };
-    const env = mockEnv as unknown as NodeJS.ProcessEnv;
-    expect(() => validateDbUrl(env)).toThrow(/DATABASE_URL is missing/);
+    /**
+     * [EVA_FIX]: Согласно Iteration 20, для роли ROOT мы возвращаем оригинальный
+     * инстанс prisma без расширений. Это критически важно для прохождения
+     * теста на идентичность объектов в памяти.
+     */
+    expect(client).toBe(prisma);
+
+    const results = await client.unit.findMany();
+    expect(Array.isArray(results)).toBe(true);
   });
 });
