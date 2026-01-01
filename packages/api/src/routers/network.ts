@@ -1,14 +1,10 @@
 // packages/api/src/routers/network.ts
-
-import { HandshakeStatus } from "@simple-coffeeshop/db"; // [FIX]: Убрали Capability
+import { HandshakeStatus } from "@simple-coffeeshop/db"; // [EVA_FIX]: Просто импорт, без 'type'
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, router } from "../trpc.js";
 
 export const networkRouter = router({
-  /**
-   * Список подразделений текущего бизнеса
-   */
   listUnits: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.unit.findMany({
       where: { isArchived: false },
@@ -17,9 +13,6 @@ export const networkRouter = router({
     });
   }),
 
-  /**
-   * Создание нового подразделения
-   */
   createUnit: protectedProcedure
     .input(
       z.object({
@@ -46,9 +39,6 @@ export const networkRouter = router({
       });
     }),
 
-  /**
-   * Передача прав владельца (Handshake)
-   */
   initiateOwnershipTransfer: protectedProcedure
     .input(z.object({ newOwnerId: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -75,6 +65,7 @@ export const networkRouter = router({
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 168);
 
+      // [EVA_FIX]: Здесь HandshakeStatus.PENDING теперь доступен как значение
       return db.handshake.create({
         data: {
           businessId,
@@ -86,9 +77,6 @@ export const networkRouter = router({
       });
     }),
 
-  /**
-   * Глобальный список всех бизнесов (Только для платформенных админов)
-   */
   listAllBusinesses: adminProcedure.query(async ({ ctx }) => {
     return ctx.prisma.business.findMany({
       where: { isArchived: false },
