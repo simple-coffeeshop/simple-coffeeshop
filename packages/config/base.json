@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "pretty": true,
     "tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
   }

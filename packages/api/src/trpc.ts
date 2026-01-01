@@ -1,11 +1,13 @@
 // packages/api/src/trpc.ts
-import { createIsolatedClient, type PlatformRole, prisma } from "@simple-coffeeshop/db";
+
+import type { PlatformRole } from "@simple-coffeeshop/db"; // [EVA_FIX]: Импорт строго как тип
+import { createIsolatedClient, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 /**
- * [EVA_FIX]: Внутренний контекст для тестов (без Request)
+ * [EVA_FIX]: Внутренний контекст для тестов.
  */
 export const createInnerTRPCContext = (opts: {
   userId?: string | null;
@@ -14,7 +16,8 @@ export const createInnerTRPCContext = (opts: {
   is2FAVerified?: boolean;
 }) => {
   const { businessId, platformRole, userId, is2FAVerified } = opts;
-  const db = businessId ? createIsolatedClient(businessId) : null;
+  // Пробрасываем роль в клиент
+  const db = businessId ? createIsolatedClient(businessId, platformRole) : null;
 
   return {
     prisma,
@@ -45,22 +48,18 @@ export const createTRPCContext = async (opts: { req: Request }) => {
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError
-            ? error.cause.issues // Передаем сырой массив ZodIssue
-            : null,
-      },
-    };
-  },
+  errorFormatter: ({ shape, error }) => ({
+    ...shape,
+    data: {
+      ...shape.data,
+      zodError: error.cause instanceof ZodError ? error.cause.issues : null,
+    },
+  }),
 });
 
 /**
- * Middlewares
+ * [EVA_FIX]: Гранулярный Middleware для тестов и безопасности.
+ * Разделяем ошибки 401 (нет юзера) и 400 (нет бизнеса).
  */
 const isAuthed = t.middleware(({ next, ctx }) => {
   if (!ctx.userId) {

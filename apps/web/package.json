@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "vite preview --port 3000 --host",
+    "start": "sirv dist --port 3000 --host",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "biome check .",
@@ -42,6 +42,7 @@
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.11.0",
     "recharts": "^3.6.0",
+    "sirv": "^3.0.2",
     "superjson": "^2.2.6"
   }
 }
