@@ -60,10 +60,3 @@
 * **Clean Code:** TSDoc обязателен. "Boy Scout Rule". Использование `unknown` вместо `any`.
 * **Architecture:** Предложение ADR в `docs/adr/`.
 * **Math:** Используй LaTeX только для сложных формул. Оборачивай в `$inline$` или `$$display$$`. Не используй LaTeX для простого текста, названий или Resume.
-
-## 6. Технические правки (Project Core)
-
-* **Auth:** Вход по `email/password` (argon2). Сессии через `JWT`.
-* **Multitenancy:** Изоляция на уровне Prisma через `createIsolatedClient(businessId)`.
-* **Roles:** `ROOT` (системный админ), `CO_SU` (админ компании), `NONE` (обычный юзер).
-* **Soft Delete:** Все запросы через изолированный клиент автоматически фильтруют `isArchived: false`.

@@ -26,7 +26,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 # Копируем остальной код
 COPY . .
 
-# [EVA_FIX]: DATABASE_URL заглушка для генерации типов во время билда
+# [EVA_FIX]: DATABASE_URL заглушка для генерации типов во время билда всего монорепозитория
 RUN DATABASE_URL="postgresql://docker:build@localhost:5432/build" pnpm --filter @simple-coffeeshop/db generate && \
   pnpm build
 
@@ -38,8 +38,9 @@ RUN pnpm --filter ${PKG_NAME} --prod --legacy deploy /app/deployed
 
 # [EVA_FIX]: Принудительная перегенерация Prisma Client внутри изолированной папки.
 # Это гарантирует, что клиент будет находиться в /app/deployed/node_modules/.prisma
+# Шаг выполняется только если пакет содержит или зависит от packages/db
 WORKDIR /app/deployed
-RUN if [ -d "./packages/db" ]; then \
+RUN if [ -d "./packages/db" ] || [ "$PKG_NAME" = "@simple-coffeeshop/api" ]; then \
   DATABASE_URL="postgresql://docker:build@localhost:5432/build" npx prisma generate --schema ./packages/db/prisma/schema/schema.prisma; \
   fi
 
@@ -47,7 +48,7 @@ RUN if [ -d "./packages/db" ]; then \
 FROM base AS runner
 WORKDIR /app
 
-# Копируем только то, что нужно для работы
+# Копируем только то, что нужно для работы из изолированного слоя
 COPY --from=isolate /app/deployed ./
 
 # [EVA_FIX]: Добавляем локальные бинарники зависимостей в PATH.
