@@ -3,7 +3,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "@prisma/client";
 import pg from "pg";
-import { dbUrl } from "./prisma.config.js"; // [FIX]: Добавлено .js для ESM
+import { dbUrl } from "./env.js"; // [FIX]: Добавлено .js для ESM
 
 const pool = new pg.Pool({ connectionString: dbUrl });
 const adapter = new PrismaPg(pool);
