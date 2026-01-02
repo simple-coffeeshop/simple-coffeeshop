@@ -1,118 +1,63 @@
-// apps/web/src/modules/Units/Units.tsx [АКТУАЛЬНО]
-
-// [EVA_FIX]: Импортируем CapabilityType напрямую
-import type { CapabilityType } from "@simple-coffeeshop/db";
-import { Badge, Button, type Column, GlassCard, Input, Modal, Select, Table } from "@simple-coffeeshop/ui";
-import type React from "react";
-import { useState } from "react";
+// apps/web/src/modules/Units/Units.tsx
+import { Badge, Button, GlassCard, Tooltip } from "@simple-coffeeshop/ui";
+import { Activity, Coffee, MapPin, Plus, Settings } from "lucide-react";
 import { trpc } from "../../utils/trpc";
 import styles from "./Units.module.scss";
 
-type UnitWithEnterprise = {
-  id: string;
-  name: string;
-  address: string | null;
-  timezone: string;
-  capabilities: CapabilityType[]; // [EVA_FIX]: Используем новый тип
-  enterprise: { name: string; id: string } | null;
-};
-
-export const Units: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEnterprise, setSelectedEnterprise] = useState<string>("");
-  const [newUnitName, setNewUnitName] = useState("");
-  const [newUnitAddress, setNewUnitAddress] = useState("");
-
-  const utils = trpc.useUtils();
+/**
+ * Модуль управления Юнитами (подразделениями).
+ */
+export const Units = () => {
   const { data: units, isLoading } = trpc.network.listUnits.useQuery();
   const { data: enterprises } = trpc.network.listEnterprises.useQuery();
 
-  const createUnit = trpc.network.createUnit.useMutation({
-    onSuccess: () => {
-      utils.network.listUnits.invalidate();
-      setIsModalOpen(false);
-      setNewUnitName("");
-      setNewUnitAddress("");
-      setSelectedEnterprise("");
-    },
-  });
-
-  const columns: Column<UnitWithEnterprise>[] = [
-    { header: "Название", accessor: "name" },
-    { header: "Сеть", accessor: (row) => row.enterprise?.name || "-" },
-    { header: "Адрес", accessor: (row) => row.address || "Не указан" },
-    {
-      header: "Возможности",
-      accessor: (row) => (
-        <div className={styles.caps}>
-          {row.capabilities.map((cap) => (
-            <Badge key={cap} variant="primary" size="sm">
-              {cap}
-            </Badge>
-          ))}
-        </div>
-      ),
-    },
-    { header: "Часовой пояс", accessor: "timezone" },
-  ];
-
-  const enterpriseOptions =
-    enterprises?.map((ent) => ({
-      label: ent.name,
-      value: ent.id,
-    })) || [];
-
-  const handleCreate = () => {
-    if (!newUnitName || !selectedEnterprise) return;
-    createUnit.mutate({
-      name: newUnitName,
-      enterpriseId: selectedEnterprise,
-      address: newUnitAddress,
-      capabilities: ["DATA"],
-    });
-  };
+  if (isLoading) return <div className={styles.loading}>Загрузка данных...</div>;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.unitsPage}>
       <header className={styles.header}>
-        <div>
-          <h1>Реестр объектов</h1>
-          <p className={styles.subtitle}>Управление торговыми точками</p>
+        <div className={styles.titleBlock}>
+          <h1>Управление Юнитами</h1>
+          {/* [EVA_FIX]: Используем enterprises для отображения кол-ва предприятий */}
+          <Badge variant="neutral">Всего предприятий: {enterprises?.length ?? 0}</Badge>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>Добавить юнит</Button>
+        <Button variant="primary" icon={Plus}>
+          Регистрация точки
+        </Button>
       </header>
 
-      <GlassCard className={styles.content}>
-        <Table data={units || []} columns={columns} isLoading={isLoading} />
-      </GlassCard>
+      <div className={styles.unitsGrid}>
+        {(units ?? []).map((unit) => (
+          <GlassCard key={unit.id} className={styles.unitCard}>
+            <div className={styles.cardHeader}>
+              <div className={styles.info}>
+                <div className={styles.nameRow}>
+                  <Coffee size={18} />
+                  <h3>{unit.name}</h3>
+                </div>
+                <span className={styles.business}>{unit.enterprise.name}</span>
+              </div>
+              <Badge variant="success">online</Badge>
+            </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Новая торговая точка">
-        <div className={styles.form}>
-          <Input label="Название ТТ" value={newUnitName} onChange={(e) => setNewUnitName(e.target.value)} />
-          <Select
-            label="Выберите сеть"
-            options={enterpriseOptions}
-            value={selectedEnterprise}
-            onChange={setSelectedEnterprise}
-          />
-          <Input label="Адрес" value={newUnitAddress} onChange={(e) => setNewUnitAddress(e.target.value)} />
-          <div className={styles.actions}>
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Отмена
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreate}
-              // [EVA_FIX]: Используем isPending (React Query v5)
-              isLoading={createUnit.isPending}
-            >
-              Создать
-            </Button>
-          </div>
-        </div>
-      </Modal>
+            <div className={styles.location}>
+              <MapPin size={14} />
+              <span>{unit.address ?? "Адрес не указан"}</span>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="secondary" size="sm" icon={Activity}>
+                Мониторинг
+              </Button>
+              <Tooltip content="Паспорт возможностей юнита">
+                <Button variant="secondary" size="sm" icon={Settings}>
+                  Настройки
+                </Button>
+              </Tooltip>
+            </div>
+          </GlassCard>
+        ))}
+      </div>
     </div>
   );
 };
-
-export default Units;

@@ -1,11 +1,11 @@
-// apps/web/src/App.tsx [АКТУАЛЬНО]
+// apps/web/src/App.tsx
 import { Badge, GlassCard, Skeleton } from "@simple-coffeeshop/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { clsx } from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import superjson from "superjson"; // Убедись, что пакет установлен
+import superjson from "superjson";
 import styles from "./App.module.scss";
 import BusinessModule from "./modules/Business/Business";
 import { OrdersModule } from "./modules/Orders/Orders";
@@ -76,12 +76,12 @@ function App() {
         links: [
           httpBatchLink({
             url: "http://localhost:3001/trpc",
-            // [EVA_FIX]: Transformer теперь живет здесь (tRPC v11)
             transformer: superjson,
             headers() {
               return {
-                "x-platform-role": "ROOT", // Эмуляция для разработки
+                "x-platform-role": "ROOT",
                 "x-user-id": "dev-user-id",
+                "x-business-id": "dev-business-id", // Добавили для изоляции
               };
             },
           }),
@@ -97,8 +97,9 @@ function App() {
           <RootLayout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/module-01" element={<BusinessModule />} />
-              <Route path="/module-02" element={<Units />} />
+              {/* Обновленные пути для соответствия Sprint 1 */}
+              <Route path="/business" element={<BusinessModule />} />
+              <Route path="/units" element={<Units />} />
               <Route path="/orders" element={<OrdersModule />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
