@@ -1,0 +1,47 @@
+// packages/db/prisma/schema/user.prisma
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String
+  status       UserStatus   @default(ACTIVE)
+  platformRole PlatformRole @default(NONE)
+
+  // Hard Link к профилю
+  externalEmployeeId String?          @unique
+  employeeProfile    EmployeeProfile? @relation(fields: [externalEmployeeId], references: [id])
+
+  memberships Member[]
+  sessions    Session[]
+
+  // Бизнес, которым владеет пользователь
+  ownedBusiness Business? @relation("BusinessOwner")
+
+  // Handshake, где пользователь является ТЕКУЩИМ владельцем (отдает бизнес)
+  // Мы удалили transfersTo, так как новая связь идет по Email (String)
+  transfersFrom Handshake[] @relation("FormerOwner")
+
+  customRoles UserCustomRole[]
+  permissions PermissionOverride[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([externalEmployeeId])
+}
+
+model Invite {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  token       String       @unique
+  role        PlatformRole @default(NONE)
+  businessId  String?
+  expiresAt   DateTime
+  isUsed      Boolean      @default(false)
+  invitedById String
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}

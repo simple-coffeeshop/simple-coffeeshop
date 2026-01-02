@@ -1,16 +1,23 @@
+// packages/db/prisma/schema/enums.prisma
+
 enum PlatformRole {
   ROOT // God-mode
   CO_SU // Platform Admin
-  NONE
+  NONE // Обычный юзер
 }
 
-enum Capability {
-  DATA // 📦
-  KITCHEN // 🔪
+enum UserStatus {
+  ACTIVE
+  BANNED // Для вечного хранения истории
+}
+
+enum UnitCapability {
+  INVENTORY // 📦
+  PRODUCTION // 🔪
   STAFF // 👥
-  SUPPLIER // 🚚
-  CASH // 💰
-  CERTIFICATION // 🎓
+  FINANCE // 💰
+  LOGISTICS // 🚚
+  LMS // 🎓
 }
 
 enum UserRole {

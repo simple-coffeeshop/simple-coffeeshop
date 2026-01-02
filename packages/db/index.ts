@@ -1,13 +1,13 @@
-// packages/db/index.ts [CURRENT]
+// packages/db/index.ts
 import { PrismaPg } from "@prisma/adapter-pg";
-// [EVA_FIX]: Импортируем типы отдельно для последующего экспорта
+// [EVA_FIX]: Импортируем актуальные типы. Capability переименован в UnitCapability.
 import type {
   Business as PrismaBusiness,
-  Capability as PrismaCapability,
   Handshake as PrismaHandshake,
   HandshakeStatus as PrismaHandshakeStatus,
   PlatformRole as PrismaPlatformRole,
   Unit as PrismaUnit,
+  UnitCapability as PrismaUnitCapability,
   User as PrismaUser,
   UserRole as PrismaUserRole,
 } from "@prisma/client";
@@ -26,9 +26,13 @@ export const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "test" ? [] : ["query", "info", "warn", "error"],
 });
 
-export const { PlatformRole, UserRole, HandshakeStatus, AssetStatus, Capability } = pkg;
+/**
+ * [EVA_FIX]: Экспортируем UnitCapability вместо Capability.
+ * Это решает ошибки TS2305 и TS2339 при сборке.
+ */
+export const { PlatformRole, UserRole, HandshakeStatus, AssetStatus, UnitCapability } = pkg;
 
-export type CapabilityType = PrismaCapability;
+export type UnitCapabilityType = PrismaUnitCapability;
 export type BusinessType = PrismaBusiness;
 export type UnitType = PrismaUnit;
 export type UserType = PrismaUser;
@@ -51,10 +55,10 @@ interface PrismaQueryArgs {
  * [EVA_FIX]: Фабрика изолированного клиента.
  * Поддерживает Multitenancy, Soft Delete и God-mode для ROOT.
  */
-export const createIsolatedClient = (businessId: string | null, role: pkg.PlatformRole = "NONE") => {
+export const createIsolatedClient = (businessId: string | null, role: PrismaPlatformRole = "NONE") => {
   /**
    * [EVA_FIX]: Для ROOT возвращаем оригинальный инстанс.
-   * Это обеспечивает прохождение теста на идентичность (toBe) и доступ к архивным данным.
+   * Это обеспечивает доступ ко всем данным без ограничений тенанта.
    */
   if (role === "ROOT") {
     return prisma;

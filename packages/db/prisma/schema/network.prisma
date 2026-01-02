@@ -1,196 +1,171 @@
 // packages/db/prisma/schema/network.prisma
-// Модуль 00: Core Network & Identity
-
-model User {
-  id              String       @id @default(cuid())
-  email           String       @unique
-  passwordHash    String?
-  firstName       String?
-  lastName        String?
-  
-  // Платформенные роли для SU/CO_SU (God-mode)
-  platformRole    PlatformRole @default(NONE)
-  
-  // Безопасность и 2FA
-  twoFactorSecret String?
-  is2FAEnabled    Boolean      @default(false)
-  
-  // Принцип Soft Delete: хранение данных вечно
-  isArchived      Boolean      @default(false)
-
-  // Связи
-  memberships     Member[]
-  sessions        Session[]
-  
-  // Владение бизнесом и механизм Handshake
-  ownedBusiness   Business?    @relation("BusinessOwner")
-  transfersFrom   Handshake[]  @relation("FormerOwner")
-  transfersTo     Handshake[]  @relation("NewOwner")
-  
-  // Локальный RBAC внутри конкретного бизнеса
-  customRoles     UserCustomRole[]
-  permissions     PermissionOverride[]
-
-  createdAt       DateTime     @default(now()) // UTC Everywhere
-  updatedAt       DateTime     @updatedAt
-
-  @@index([email])
-}
 
 model Business {
-  id              String       @id @default(cuid())
-  name            String
-  isArchived      Boolean      @default(false)
+  id         String  @id @default(cuid())
+  name       String
+  isArchived Boolean @default(false)
 
-  // Ownership Handshake: кулдаун 168 часов
-  ownerId         String?      @unique
-  owner           User?        @relation("BusinessOwner", fields: [ownerId], references: [id])
-  handshakeStatus HandshakeStatus @default(IDLE)
-  handshakeAt     DateTime?
+  // Ownership
+  ownerId String? @unique
+  owner   User?   @relation("BusinessOwner", fields: [ownerId], references: [id])
 
-  enterprises     Enterprise[]
-  members         Member[]     // Связь сотрудников через промежуточную таблицу
-  units           Unit[]
-  assets          Asset[]
-  handshakes      Handshake[]
+  enterprises      Enterprise[]
+  members          Member[]
+  units            Unit[]
+  assets           Asset[]
+  handshakes       Handshake[]
+  employeeProfiles EmployeeProfile[]
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ownerId])
 }
 
 model Member {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  businessId      String
-  business        Business     @relation(fields: [businessId], references: [id])
-  
-  // Роль в рамках конкретного тенанта (Owner, User и т.д.)
-  role            UserRole     @default(USER)
-  isArchived      Boolean      @default(false)
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
 
-  createdAt       DateTime     @default(now())
+  role       UserRole @default(USER)
+  isArchived Boolean  @default(false)
+
+  createdAt DateTime @default(now())
 
   @@unique([userId, businessId])
   @@index([businessId])
 }
 
 model Session {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  
-  token           String       @unique
-  userAgent       String?
-  ipAddress       String?
-  
-  // Для аудита активных сессий и контроля безопасности
-  expiresAt       DateTime
-  createdAt       DateTime     @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([userId])
 }
 
+model EmployeeProfile {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  firstName String
+  lastName  String
+  phone     String @unique
+
+  // Связь с User (аккаунтом) описывается через User.externalEmployeeId
+  user User?
+
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+}
+
 model Enterprise {
-  id              String       @id @default(cuid())
-  name            String
-  businessId      String
-  business        Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  
-  units           Unit[]
-  isArchived      Boolean      @default(false)
+  id         String   @id @default(cuid())
+  name       String
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  units      Unit[]
+  isArchived Boolean @default(false)
 
   @@unique([name, businessId])
   @@index([businessId])
 }
 
 model Unit {
-  id           String       @id @default(cuid())
-  name         String
-  address      String?
-  timezone     String       @default("UTC") // Timezone Helper
-  
-  // Типизированные возможности юнита
-  capabilities Capability[] 
-  tags         String[]
-  allowedIp    String?      // Allowed IP Gate
-  
-  enterpriseId String
-  enterprise   Enterprise   @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
-  businessId   String
-  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id       String  @id @default(cuid())
+  name     String
+  address  String?
+  timezone String  @default("UTC")
 
-  isArchived   Boolean      @default(false)
-  assets       Asset[]
+  capabilities UnitCapability[]
+  allowedIps   String[]         @default([])
+
+  enterpriseId String
+  enterprise   Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+  businessId   String
+  business     Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  isArchived Boolean @default(false)
+  assets     Asset[]
+
+  createdAt DateTime @default(now())
 
   @@index([businessId])
   @@index([enterpriseId])
 }
 
 model Handshake {
-  id              String          @id @default(cuid())
-  businessId      String
-  business        Business        @relation(fields: [businessId], references: [id])
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
 
-  formerOwnerId   String
-  formerOwner     User            @relation("FormerOwner", fields: [formerOwnerId], references: [id])
+  formerOwnerId String
+  formerOwner   User   @relation("FormerOwner", fields: [formerOwnerId], references: [id])
 
-  newOwnerId      String
-  newOwner        User            @relation("NewOwner", fields: [newOwnerId], references: [id])
-
-  status          HandshakeStatus @default(PENDING)
-  createdAt       DateTime        @default(now())
-  expiresAt       DateTime        // Истечение через 168 часов
+  // [EVA_FIX]: Используем Email вместо ID для внешних инвайтов
+  // Удалена связь newOwner: User, чтобы избежать конфликта имен Prisma [cite: 8]
+  newOwnerEmail String
+  status        HandshakeStatus @default(PENDING)
+  effectiveAt   DateTime // Кулдаун 168ч
+  createdAt     DateTime        @default(now())
 
   @@index([businessId])
   @@index([formerOwnerId])
-  @@index([newOwnerId])
 }
 
 model CustomRole {
-  id              String           @id @default(cuid())
-  name            String
-  businessId      String
-  permissions     String[]         // Матрица прав
-  users           UserCustomRole[]
+  id          String           @id @default(cuid())
+  name        String
+  businessId  String
+  permissions String[]
+  users       UserCustomRole[]
 
   @@index([businessId])
 }
 
 model UserCustomRole {
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  customRoleId    String
-  customRole      CustomRole       @relation(fields: [customRoleId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  customRoleId String
+  customRole   CustomRole @relation(fields: [customRoleId], references: [id])
 
   @@id([userId, customRoleId])
 }
 
 model PermissionOverride {
-  id              String           @id @default(cuid())
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  permission      String
-  value           Boolean          @default(true)
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id])
+  permission String
+  value      Boolean @default(true)
 
   @@index([userId])
 }
 
 model Asset {
-  id              String           @id @default(cuid())
-  name            String
-  serialNumber    String?
-  unitId          String
-  unit            Unit             @relation(fields: [unitId], references: [id])
-  businessId      String
-  business        Business         @relation(fields: [businessId], references: [id])
+  id           String   @id @default(cuid())
+  name         String
+  serialNumber String?
+  unitId       String
+  unit         Unit     @relation(fields: [unitId], references: [id])
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
 
-  status          AssetStatus      @default(OPERATIONAL)
-  criticality     Int              @default(1)
+  status      AssetStatus @default(OPERATIONAL)
+  criticality Int         @default(1)
 
-  createdAt       DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@index([unitId])
   @@index([businessId])
