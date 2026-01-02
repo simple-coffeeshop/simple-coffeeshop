@@ -30,6 +30,7 @@
     "@fontsource/geist-sans": "^5.2.5",
     "@radix-ui/react-dialog": "^1.1.15",
     "@simple-coffeeshop/api": "workspace:*",
+    "@simple-coffeeshop/db": "workspace:*",
     "@simple-coffeeshop/ui": "workspace:*",
     "@tanstack/react-query": "^5.90.14",
     "@trpc/client": "^11.8.1",

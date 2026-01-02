@@ -1,13 +1,18 @@
-import { Badge, GlassCard, Skeleton } from "@simple-coffeeshop/ui"; // Убрали Button
+// apps/web/src/App.tsx [АКТУАЛЬНО]
+import { Badge, GlassCard, Skeleton } from "@simple-coffeeshop/ui";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
 import { clsx } from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import superjson from "superjson"; // Убедись, что пакет установлен
 import styles from "./App.module.scss";
 import BusinessModule from "./modules/Business/Business";
 import { OrdersModule } from "./modules/Orders/Orders";
-import UnitsModule from "./modules/Units/Units";
+import { Units } from "./modules/Units/Units";
 import { RevenueChart } from "./shared/components/Charts/RevenueChart";
 import { RootLayout } from "./shared/layouts/RootLayout";
+import { trpc } from "./utils/trpc";
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -64,18 +69,43 @@ const Dashboard = () => {
 };
 
 function App() {
+  const [queryClient] = useState(() => new QueryClient());
+  const trpcClient = useMemo(
+    () =>
+      trpc.createClient({
+        links: [
+          httpBatchLink({
+            url: "http://localhost:3001/trpc",
+            // [EVA_FIX]: Transformer теперь живет здесь (tRPC v11)
+            transformer: superjson,
+            headers() {
+              return {
+                "x-platform-role": "ROOT", // Эмуляция для разработки
+                "x-user-id": "dev-user-id",
+              };
+            },
+          }),
+        ],
+      }),
+    [],
+  );
+
   return (
-    <BrowserRouter>
-      <RootLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/module-01" element={<BusinessModule />} />
-          <Route path="/module-02" element={<UnitsModule />} />
-          <Route path="/orders" element={<OrdersModule />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </RootLayout>
-    </BrowserRouter>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <RootLayout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/module-01" element={<BusinessModule />} />
+              <Route path="/module-02" element={<Units />} />
+              <Route path="/orders" element={<OrdersModule />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </RootLayout>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 

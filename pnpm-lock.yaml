@@ -44,6 +44,9 @@ importers:
       '@simple-coffeeshop/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@simple-coffeeshop/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@simple-coffeeshop/ui':
         specifier: workspace:*
         version: link:../../packages/ui
