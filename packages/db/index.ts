@@ -1,5 +1,16 @@
 // packages/db/index.ts [CURRENT]
 import { PrismaPg } from "@prisma/adapter-pg";
+// [EVA_FIX]: Импортируем типы отдельно для последующего экспорта
+import type {
+  Business as PrismaBusiness,
+  Capability as PrismaCapability,
+  Handshake as PrismaHandshake,
+  HandshakeStatus as PrismaHandshakeStatus,
+  PlatformRole as PrismaPlatformRole,
+  Unit as PrismaUnit,
+  User as PrismaUser,
+  UserRole as PrismaUserRole,
+} from "@prisma/client";
 import pkg from "@prisma/client";
 import pg from "pg";
 import { validateDbUrl } from "./env.js";
@@ -17,17 +28,14 @@ export const prisma = new PrismaClient({
 
 export const { PlatformRole, UserRole, HandshakeStatus, AssetStatus, Capability } = pkg;
 
-export type {
-  Asset,
-  Business,
-  Enterprise,
-  Handshake,
-  HandshakeStatus as HandshakeStatusType,
-  PlatformRole as PlatformRoleType,
-  Unit,
-  User,
-  UserRole as UserRoleType,
-} from "@prisma/client";
+export type CapabilityType = PrismaCapability;
+export type BusinessType = PrismaBusiness;
+export type UnitType = PrismaUnit;
+export type UserType = PrismaUser;
+export type HandshakeType = PrismaHandshake;
+export type HandshakeStatusType = PrismaHandshakeStatus;
+export type PlatformRoleType = PrismaPlatformRole;
+export type UserRoleType = PrismaUserRole;
 
 export { Prisma };
 

@@ -1,55 +1,57 @@
 services:
-  # База данных (Скрыта от внешнего мира)
-  db-prod:
+  db:
     image: postgres:18-alpine
-    container_name: sc-db-prod
+    container_name: sc-dev-db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB_PROD:-simple_coffeeshop_prod}
-    volumes:
-      - sc-prod-data:/var/lib/postgresql/data
-    networks:
-      - sc-prod-network
-
-  # API Сервер (Внутренний)
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # Использует стандартный stage 'runner' из Dockerfile
-      args:
-        PKG_NAME: "@simple-coffeeshop/api"
-    container_name: sc-api-prod
-    restart: always
-    environment:
-      DATABASE_URL: ${DATABASE_URL_PROD}
-      NODE_ENV: production
-    depends_on:
-      - db-prod
-    networks:
-      - sc-prod-network
-
-  # Nginx + Фронтенд (Публичный)
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner-web # Явно указываем этап с Nginx
-      args:
-        PKG_NAME: "@simple-coffeeshop/web"
-    container_name: sc-web-prod
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      # Переменная ниже требует наличия init-db.sh для работы
+      POSTGRES_MULTIPLE_DATABASES: ${POSTGRES_DB},${POSTGRES_DB_TEST}
+      TZ: UTC
     ports:
-      - "80:80"
-    restart: always
-    depends_on:
-      - api
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     networks:
-      - sc-prod-network
+      - sc-network
 
+  adminer:
+    image: adminer
+    container_name: sc-adminer-dev
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sc-network
+
+  redis-prod:
+    image: redis:8-alpine
+    container_name: sc-redis-prod
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - sc-redis-data:/data
+    networks:
+      - sc-network
+
+# Обязательное объявление сети
 networks:
-  sc-prod-network:
+  sc-network:
+    driver: bridge
 
+# Объявление томов
 volumes:
   sc-prod-data:
+  sc-redis-data:
+  postgres_data:
+    name: simple-coffeeshop-postgres-data
