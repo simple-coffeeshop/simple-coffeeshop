@@ -11,7 +11,7 @@ fi
 
 # Парсим список
 for db in $(echo "$POSTGRES_MULTIPLE_DATABASES" | tr ',' ' '); do
-  db=$(echo $db | xargs)
+  db=$(echo "$db" | xargs)
   if [ -z "$db" ]; then continue; fi
 
   echo "[INIT-DB]: Checking database '$db'..."
