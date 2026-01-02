@@ -7,5 +7,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    fileParallelism: false, // Отключает параллельный запуск файлов
+    maxWorkers: 1, // Использует только один воркер
   },
 });
