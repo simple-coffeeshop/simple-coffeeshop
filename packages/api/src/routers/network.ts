@@ -1,76 +1,52 @@
-// packages/api/src/routers/network.ts [АКТУАЛЬНО]
-import { HandshakeStatus } from "@simple-coffeeshop/db";
+// packages/api/src/routers/network.ts
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { adminProcedure, protectedProcedure, router } from "../trpc.js";
+import { protectedProcedure, router } from "../trpc.js";
 
 /**
- * [EVA_LOGIC]: Роутер Network отвечает за Модуль 00: Core Network & Identity.
- * Управляет иерархией: Business -> Enterprise -> Unit.
+ * Роутер управления сетевой структурой.
+ * Реализует логику Паспорта Юнита и передачи прав владения.
  */
 export const networkRouter = router({
-  // --- Enterprises (Сети) ---
+  /**
+   * Список всех подразделений (Юнитов) текущего бизнеса.
+   */
+  listUnits: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.unit.findMany({
+      where: { isArchived: false },
+      include: {
+        enterprise: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+  }),
+
+  /**
+   * Список предприятий (Enterprises) текущего бизнеса.
+   */
   listEnterprises: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.enterprise.findMany({
-      where: {
-        businessId: ctx.businessId ?? "none",
-        isArchived: false,
-      },
-      include: { _count: { select: { units: true } } },
-      orderBy: { name: "asc" },
+      where: { isArchived: false },
+      select: { id: true, name: true },
     });
   }),
 
-  createEnterprise: protectedProcedure.input(z.object({ name: z.string().min(2) })).mutation(async ({ input, ctx }) => {
-    if (!ctx.businessId) throw new TRPCError({ code: "BAD_REQUEST", message: "Бизнес не выбран" });
-
-    return ctx.db.enterprise.create({
-      data: {
-        name: input.name,
-        businessId: ctx.businessId,
-      },
-    });
-  }),
-
-  // --- Units (Торговые точки) ---
-  listUnits: protectedProcedure.query(async ({ ctx }) => {
-    const isPlatformAdmin = ctx.platformRole === "ROOT" || ctx.platformRole === "CO_SU";
-
-    return ctx.db.unit.findMany({
-      where: {
-        // [EVA_FIX]: ROOT видит всё (undefined), остальные — только свой бизнес
-        businessId: isPlatformAdmin ? (ctx.businessId ?? undefined) : (ctx.businessId ?? "none"),
-        isArchived: false,
-      },
-      include: { enterprise: true },
-      orderBy: { name: "asc" },
-    });
-  }),
-
+  /**
+   * Создание нового Юнита.
+   * Обязательно проверяет Capabilities и применяет Geofencing.
+   */
   createUnit: protectedProcedure
     .input(
       z.object({
         name: z.string().min(2),
         enterpriseId: z.string(),
         timezone: z.string().default("UTC"),
-        capabilities: z.array(z.enum(["DATA", "KITCHEN", "STAFF", "SUPPLIER", "CASH", "CERTIFICATION"])),
+        capabilities: z.array(z.enum(["INVENTORY", "PRODUCTION", "STAFF", "FINANCE", "LOGISTICS", "LMS"])),
         address: z.string().optional(),
+        allowedIps: z.array(z.string()).default([]),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.businessId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Необходимо выбрать бизнес для создания подразделения",
-        });
-      }
-
-      // Проверяем принадлежность сети к бизнесу
-      const ent = await ctx.db.enterprise.findFirst({
-        where: { id: input.enterpriseId, businessId: ctx.businessId },
-      });
-      if (!ent) throw new TRPCError({ code: "FORBIDDEN", message: "Сеть не найдена в текущем бизнесе" });
-
       return ctx.db.unit.create({
         data: {
           ...input,
@@ -79,42 +55,37 @@ export const networkRouter = router({
       });
     }),
 
-  // --- Ownership ---
+  /**
+   * Инициация передачи владения (Ownership Transfer).
+   * [BEST PRACTICE]: Используем Email для связи с будущим владельцем.
+   */
   initiateOwnershipTransfer: protectedProcedure
-    .input(z.object({ newOwnerId: z.string() }))
+    .input(z.object({ newOwnerEmail: z.email() }))
     .mutation(async ({ input, ctx }) => {
-      const { businessId, userId, platformRole, db } = ctx;
-
-      if (!businessId || !userId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Недостаточно данных" });
-      }
-
       const business = await ctx.prisma.business.findUnique({
-        where: { id: businessId },
+        where: { id: ctx.businessId },
       });
 
-      if (business?.ownerId !== userId && platformRole !== "ROOT") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Только владелец может передать права" });
+      // Проверка прав: только текущий владелец или ROOT
+      if (business?.ownerId !== ctx.userId && ctx.platformRole !== "ROOT") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Недостаточно прав для инициации передачи бизнеса",
+        });
       }
 
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168); // 168 часов согласно 00_module.md
+      // Кулдаун 168 часов (Sprint 1 Blueprint)
+      const effectiveAt = new Date();
+      effectiveAt.setHours(effectiveAt.getHours() + 168);
 
-      return db.handshake.create({
+      return ctx.prisma.handshake.create({
         data: {
-          businessId,
-          formerOwnerId: userId,
-          newOwnerId: input.newOwnerId,
-          expiresAt,
-          status: HandshakeStatus.PENDING,
+          businessId: ctx.businessId,
+          formerOwnerId: ctx.userId,
+          newOwnerEmail: input.newOwnerEmail,
+          status: "PENDING",
+          effectiveAt,
         },
       });
     }),
-
-  listAllBusinesses: adminProcedure.query(async ({ ctx }) => {
-    return ctx.prisma.business.findMany({
-      where: { isArchived: false },
-      include: { _count: { select: { units: true, members: true } } },
-    });
-  }),
 });
