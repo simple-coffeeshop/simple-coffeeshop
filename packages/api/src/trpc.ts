@@ -1,4 +1,4 @@
-// packages/api/src/trpc.ts [АКТУАЛЬНО]
+// packages/api/src/trpc.ts
 import { createIsolatedClient, type PlatformRoleType, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
@@ -7,13 +7,14 @@ import { ZodError } from "zod";
 export const createInnerTRPCContext = (opts: {
   userId?: string | null;
   businessId?: string | null;
+  unitId?: string | null; // [EVA_FIX]: Добавлено для Passport logic
+  ip?: string | null; // [EVA_FIX]: Добавлено для Geofencing
   platformRole?: PlatformRoleType | string;
   is2FAVerified?: boolean;
 }) => {
-  const { businessId, platformRole, userId, is2FAVerified } = opts;
+  const { businessId, platformRole, userId, is2FAVerified, unitId, ip } = opts;
   const role = (platformRole || "NONE") as PlatformRoleType;
 
-  // [EVA_FIX]: ROOT видит всё через обычную призму, остальные — через изолятор
   const db = role === "ROOT" || role === "CO_SU" ? prisma : businessId ? createIsolatedClient(businessId, role) : null;
 
   return {
@@ -21,6 +22,8 @@ export const createInnerTRPCContext = (opts: {
     db,
     userId: userId ?? null,
     businessId: businessId ?? null,
+    unitId: unitId ?? null, // Прокидываем в контекст
+    ip: ip ?? null, // Прокидываем в контекст
     platformRole: role,
     is2FAVerified: is2FAVerified ?? false,
   };
@@ -29,12 +32,16 @@ export const createInnerTRPCContext = (opts: {
 export const createTRPCContext = async (opts: { req: Request }) => {
   const userId = opts.req.headers.get("x-user-id");
   const businessId = opts.req.headers.get("x-business-id");
+  const unitId = opts.req.headers.get("x-unit-id"); // Извлекаем из заголовков
+  const ip = opts.req.headers.get("x-client-ip") || opts.req.headers.get("x-forwarded-for");
   const platformRole = opts.req.headers.get("x-platform-role") || "NONE";
   const is2FAVerified = opts.req.headers.get("x-2fa-verified") === "true";
 
   return createInnerTRPCContext({
     userId,
     businessId,
+    unitId,
+    ip,
     platformRole,
     is2FAVerified,
   });
@@ -64,13 +71,14 @@ const isAuthed = t.middleware(({ next, ctx }) => {
     ctx: {
       userId: ctx.userId,
       businessId: ctx.businessId,
+      unitId: ctx.unitId, // Доступно в protectedProcedure
+      ip: ctx.ip, // Доступно в protectedProcedure
       db: ctx.db,
     },
   });
 });
 
 const isAdmin = t.middleware(({ next, ctx }) => {
-  // Теперь типизация ctx.platformRole корректно подтягивается из PlatformRole енума
   if (ctx.platformRole !== "ROOT" && ctx.platformRole !== "CO_SU") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Admin privileges required" });
   }
