@@ -68,3 +68,14 @@ EXPOSE 3000
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # Запуск основного приложения (packages/api/dist/index.js)
 CMD ["node", "dist/index.js"]
+
+# --- Этап 5: Web Runner (Nginx) ---
+# [EVA_FIX]: Этот этап используется только для сборки фронтенд-образа
+FROM nginx:alpine AS runner-web
+# Копируем билд фронтенда из этапа isolate
+COPY --from=isolate /app/deployed/dist /usr/share/nginx/html
+# Копируем конфигурацию Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
