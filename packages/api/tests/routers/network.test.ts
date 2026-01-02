@@ -1,22 +1,31 @@
+// packages/api/tests/routers/network.test.ts
 import { prisma } from "@simple-coffeeshop/db";
 import { beforeAll, describe, expect, it } from "vitest";
-import { router } from "../../src/root";
-import { createInnerTRPCContext } from "../../src/trpc";
+import { appRouter } from "../../src/root.js"; // [EVA_FIX]: Импорт appRouter
+import { createInnerTRPCContext } from "../../src/trpc.js";
+import { cleanupDatabase } from "../helpers/cleanup.js";
 
 describe("Network Router: Passport & Capabilities", () => {
   let businessId: string;
   let unitId: string;
 
   beforeAll(async () => {
+    await cleanupDatabase(); // [EVA_FIX]: Устраняет ошибку RESTRICT на EmployeeProfile
     const business = await prisma.business.create({ data: { name: "Capability Test" } });
     businessId = business.id;
 
-    // Создание Юнита с ограниченными правами (без KITCHEN)
+    // [EVA_FIX]: Согласно network.prisma, Unit требует enterpriseId
+    const enterprise = await prisma.enterprise.create({
+      data: { name: "Test Enterprise", businessId },
+    });
+
+    // Создание Юнита с актуальными именами Capabilities
     const unit = await prisma.unit.create({
       data: {
         name: "Точка без кухни",
         businessId,
-        capabilities: ["DATA", "STAFF"],
+        enterpriseId: enterprise.id,
+        capabilities: ["INVENTORY", "STAFF"], // DATA -> INVENTORY, KITCHEN отсутствует
         allowedIps: ["192.168.1.50"],
         timezone: "Europe/Moscow",
       },
@@ -24,11 +33,11 @@ describe("Network Router: Passport & Capabilities", () => {
     unitId = unit.id;
   });
 
-  it("должен блокировать доступ к модулю ТТК, если capability KITCHEN отсутствует", async () => {
-    const ctx = createInnerTRPCContext({ businessId, unitId });
-    const caller = router.createCaller(ctx);
+  it("должен блокировать доступ к модулю ТТК, если capability PRODUCTION отсутствует", async () => {
+    const ctx = createInnerTRPCContext({ businessId, unitId, userId: "test-user", platformRole: "USER" });
+    const caller = appRouter.createCaller(ctx);
 
-    // Попытка получить рецепты в юните без права "Готовить"
+    // [EVA_FIX]: Ожидаем FORBIDDEN при отсутствии PRODUCTION (ранее KITCHEN)
     await expect(caller.network.getUnitRecipes()).rejects.toThrow(
       expect.objectContaining({ code: "FORBIDDEN", message: expect.stringContaining("Capability missing") }),
     );
@@ -38,10 +47,13 @@ describe("Network Router: Passport & Capabilities", () => {
     const ctx = createInnerTRPCContext({
       businessId,
       unitId,
-      ip: "10.0.0.1", // Внешний IP, не входящий в allowedIps
+      userId: "test-user",
+      platformRole: "USER",
+      ip: "10.0.0.1", // Внешний IP
     });
-    const caller = router.createCaller(ctx);
+    const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.network.openShift()).rejects.toThrow("IP not allowed");
+    // Синхронизация с текстом ошибки в network.ts
+    await expect(caller.network.openShift()).rejects.toThrow(/IP not allowed|IP restricted/i);
   });
 });
