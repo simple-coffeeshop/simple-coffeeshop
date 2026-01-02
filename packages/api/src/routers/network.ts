@@ -21,6 +21,40 @@ export const networkRouter = router({
     });
   }),
 
+  getUnitRecipes: protectedProcedure.query(async ({ ctx }) => {
+    const unit = await ctx.db.unit.findUnique({
+      where: { id: ctx.unitId ?? "" },
+    });
+
+    if (!unit?.capabilities.includes("PRODUCTION")) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Capability missing: PRODUCTION required",
+      });
+    }
+
+    return [{ id: "1", name: "Эспрессо" }];
+  }),
+
+  /**
+   * [SPRINT 1]: Тестовый метод для проверки Geofencing.
+   * Сверяет IP из контекста со списком allowedIps юнита.
+   */
+  openShift: protectedProcedure.mutation(async ({ ctx }) => {
+    const unit = await ctx.db.unit.findUnique({
+      where: { id: ctx.unitId ?? "" },
+    });
+
+    if (unit?.allowedIps.length && ctx.ip && !unit.allowedIps.includes(ctx.ip)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "IP not allowed / IP restricted",
+      });
+    }
+
+    return { success: true };
+  }),
+
   /**
    * Список предприятий (Enterprises) текущего бизнеса.
    */
