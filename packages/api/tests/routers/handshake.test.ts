@@ -1,18 +1,42 @@
-// tests/routers/handshake.test.ts
+// packages/api/tests/routers/handshake.test.ts
 import { prisma } from "@simple-coffeeshop/db";
-// [EVA_FIX]: Удалены неиспользуемые импорты (describe, beforeAll, it, expect),
-// если они настроены глобально или еще не задействованы в коде ниже.
-import { describe, expect, it } from "vitest";
-import { router } from "../../src/root.js";
-import { createInnerTRPCContext } from "../../src/trpc";
+import { beforeAll, describe, expect, it } from "vitest";
+import { appRouter } from "../../src/root.js";
+import { createInnerTRPCContext } from "../../src/trpc.js";
+import { cleanupDatabase } from "../helpers/cleanup.js";
 
 describe("Handshake Router", () => {
-  it("должен инициализировать процесс передачи прав по Email", async () => {
-    // Тестовая логика для Спринта 1
-    const ctx = createInnerTRPCContext({ userId: "user_1", businessId: "biz_1", platformRole: "OWNER" });
-    const caller = router.createCaller(ctx);
+  beforeAll(async () => {
+    await cleanupDatabase(); // [EVA_FIX]: Устраняет ошибку RESTRICT на EmployeeProfile
+  });
 
-    // Проверка логики Handshake через Email
-    expect(caller.network.initiateOwnershipTransfer).toBeDefined();
+  it("должен инициализировать процесс передачи прав по Email", async () => {
+    const owner = await prisma.user.create({
+      data: {
+        email: "sender@aurora.com",
+        password: "secure_hash",
+        platformRole: "NONE", // Исправлено: OWNER -> NONE
+      },
+    });
+
+    const business = await prisma.business.create({
+      data: { name: "Handshake Test Corp", ownerId: owner.id },
+    });
+
+    const ctx = createInnerTRPCContext({
+      userId: owner.id,
+      businessId: business.id,
+      platformRole: "NONE",
+    });
+
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.business.inviteOwner({
+      businessId: business.id,
+      email: "invitee@test.com",
+    });
+
+    expect(result.newOwnerEmail).toBe("invitee@test.com");
+    expect(result.status).toBe("PENDING");
   });
 });
