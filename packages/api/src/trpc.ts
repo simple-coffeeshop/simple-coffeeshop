@@ -1,13 +1,9 @@
-// packages/api/src/trpc.ts
+// packages/api/src/trpc.ts [АКТУАЛЬНО]
 import { createIsolatedClient, type PlatformRoleType, prisma } from "@simple-coffeeshop/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-/**
- * [EVA_FIX]: Внутренний контекст.
- * Используем PlatformRole и как тип (в сигнатуре), и как значение (в рантайме).
- */
 export const createInnerTRPCContext = (opts: {
   userId?: string | null;
   businessId?: string | null;
@@ -15,10 +11,10 @@ export const createInnerTRPCContext = (opts: {
   is2FAVerified?: boolean;
 }) => {
   const { businessId, platformRole, userId, is2FAVerified } = opts;
-
-  // Безопасное приведение для изолированного клиента
   const role = (platformRole || "NONE") as PlatformRoleType;
-  const db = businessId ? createIsolatedClient(businessId, role) : null;
+
+  // [EVA_FIX]: ROOT видит всё через обычную призму, остальные — через изолятор
+  const db = role === "ROOT" || role === "CO_SU" ? prisma : businessId ? createIsolatedClient(businessId, role) : null;
 
   return {
     prisma,
