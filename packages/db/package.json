@@ -15,15 +15,15 @@
     "build": "tsc",
     "generate": "prisma generate",
 
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
-    "db:bootstrap": "tsx scripts/bootstrap-root.ts",
+    "push": "prisma db push",
+    "studio": "prisma studio",
+    "bootstrap": "tsx scripts/bootstrap-root.ts",
 
-    "db:push:test": "NODE_ENV=test prisma db push",
-    "db:studio:test": "NODE_ENV=test prisma studio",
+    "push:test": "NODE_ENV=test prisma db push",
+    "studio:test": "NODE_ENV=test prisma studio",
 
-    "db:push:prod": "NODE_ENV=production prisma db push",
-    "db:bootstrap:prod": "NODE_ENV=production tsx scripts/bootstrap-root.ts",
+    "push:prod": "NODE_ENV=production prisma db push",
+    "bootstrap:prod": "NODE_ENV=production tsx scripts/bootstrap-root.ts",
 
     "test": "vitest run --passWithNoTests",
     "lint": "biome check --write .",
